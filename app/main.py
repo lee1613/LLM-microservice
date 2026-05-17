@@ -1,10 +1,13 @@
 from fastapi import FastAPI
+from app.routers import intake
 
 app = FastAPI(
     title="LLM Microservice",
     description="A bare-minimum FastAPI setup for LLM services",
     version="0.1.0"
 )
+
+app.include_router(intake.router)
 
 @app.get("/")
 async def root():
