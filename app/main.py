@@ -3,6 +3,7 @@ from app.intake import router as intake
 from app.verification import router as verification
 from app.eligibility import router as eligibility
 from app.medical import router as medical
+from app.adjudication import router as adjudication
 
 app = FastAPI(
     title="LLM Microservice",
@@ -14,6 +15,7 @@ app.include_router(intake.router)
 app.include_router(verification.router)
 app.include_router(eligibility.router)
 app.include_router(medical.router)
+app.include_router(adjudication.router)
 
 @app.get("/")
 async def root():

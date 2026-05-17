@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-microservice
+  labels:
+    app: llm-microservice
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: llm-microservice
+  template:
+    metadata:
+      labels:
+        app: llm-microservice
+    spec:
+      imagePullSecrets:
+        - name: dockerhub-creds
+      containers:
+        - name: api
+          image: lee1613/llm-microservice:v1
+          ports:
+            - containerPort: 8000
+          env:
+            - name: VULTR_SERVERLESS_INFERENCE_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-secrets
+                  key: VULTR_SERVERLESS_INFERENCE_API_KEY
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: llm-secrets
+                  key: GEMINI_API_KEY
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-microservice-svc
+spec:
+  type: LoadBalancer
+  selector:
+    app: llm-microservice
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000

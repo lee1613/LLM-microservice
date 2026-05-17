@@ -167,6 +167,36 @@ def init_db():
             expiry_date TEXT
         )
     ''')
+
+    # Create tables for Node 5
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS adjudicated_claims (
+            claim_reference_draft TEXT PRIMARY KEY,
+            policy_no TEXT,
+            claim_type TEXT,
+            incident_date TEXT,
+            benefit_year INTEGER,
+            adjudication_base REAL,
+            deductible_applied REAL,
+            co_pay_amount REAL,
+            co_insurance_amount REAL,
+            net_payable REAL,
+            claimant_liability REAL,
+            adjudication_status TEXT,
+            adjudication_timestamp TEXT
+        )
+    ''')
+
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS deductible_ledger (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            policy_no TEXT,
+            benefit_year INTEGER,
+            claim_reference_no TEXT,
+            amount REAL,
+            posted_at TEXT
+        )
+    ''')
     
     # Load synthetic JSON
     base_dir = os.path.join(os.path.dirname(__file__), '..', 'data', 'health-insurance-claim', 'synthetic data')
@@ -225,6 +255,8 @@ def init_db():
     cursor.execute('DELETE FROM pre_authorisations')
     cursor.execute('DELETE FROM accredited_providers')
     cursor.execute('DELETE FROM physician_registry')
+    cursor.execute('DELETE FROM adjudicated_claims')
+    cursor.execute('DELETE FROM deductible_ledger')
     
     for pl in db_policies.get('premium_ledger', []):
         cursor.execute('''
@@ -292,7 +324,7 @@ def init_db():
 
     conn.commit()
     conn.close()
-    print("Database fully initialized with Node 2, Node 3, and Node 4 data at", DB_PATH)
+    print("Database fully initialized with Node 2, Node 3, Node 4, and Node 5 tables at", DB_PATH)
 
 if __name__ == "__main__":
     init_db()
