@@ -1,5 +1,5 @@
-from app.schemas.claim_intake import ClaimIntakeInput, ClaimIntakeOutput, IdDocumentType
-from app.services.claim_intake_tools import (
+from app.intake.schemas import ClaimIntakeInput, ClaimIntakeOutput, IdDocumentType
+from app.intake.tools import (
     validate_regex,
     mcp_query_policy_existence,
     get_server_date,
@@ -89,21 +89,20 @@ async def process_claim_intake(input_data: ClaimIntakeInput) -> ClaimIntakeOutpu
             rejection_reason = "INVALID_PHONE"
 
     # 9 & 10. Intake status decision & Rejection reason
-    intake_accepted = (rejection_reason is None)
-
-    # Produce Output Schema B
-    output = ClaimIntakeOutput(
-        claim_reference_draft=generate_draft_reference(),
+    return ClaimIntakeOutput(
+        claim_reference_draft=generate_draft_reference() if not rejection_reason else "",
         policy_no=input_data.policy_no,
         claimant_name=input_data.claimant_name,
+        id_document_type=input_data.id_document_type,
+        id_document_no=input_data.id_document_no,
+        date_of_birth=input_data.date_of_birth,
+        claimant_relationship=input_data.claimant_relationship,
         claim_type=input_data.claim_type,
         incident_date=input_data.incident_date,
         claim_date=input_data.claim_date,
         claim_amount_requested=input_data.claim_amount_requested,
-        intake_accepted=intake_accepted,
+        intake_accepted=(rejection_reason is None),
         rejection_reason=rejection_reason,
         missing_documents=missing_documents,
         intake_timestamp=get_server_timestamp()
     )
-
-    return output

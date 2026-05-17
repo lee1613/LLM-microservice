@@ -1,1 +1,40 @@
+# Core web framework
 fastapi==0.136.1
+uvicorn==0.47.0
+starlette==1.0.0
+
+# Data validation
+pydantic==2.13.4
+pydantic_core==2.46.4
+annotated-types==0.7.0
+typing-inspection==0.4.2
+typing_extensions==4.15.0
+
+# HTTP / async
+anyio==4.13.0
+httpx==0.28.1
+httpcore==1.0.9
+h11==0.16.0
+sniffio==1.3.1
+idna==3.15
+certifi==2026.4.22
+
+# OpenAI-compatible client (Vultr Serverless Inference)
+openai==2.36.0
+distro==1.9.0
+jiter==0.14.0
+tqdm==4.67.3
+
+# PDF generation
+reportlab==4.5.1
+fpdf2==2.8.7
+pillow==12.2.0
+fonttools==4.63.0
+defusedxml==0.7.1
+charset-normalizer==3.4.7
+
+# Click (used by uvicorn CLI)
+click==8.4.0
+
+# Markup safety (used by reportlab/fpdf2)
+MarkupSafe==3.0.3

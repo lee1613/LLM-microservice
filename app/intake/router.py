@@ -1,9 +1,9 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import ValidationError
 
-from app.schemas.claim_intake import ClaimIntakeInput, ClaimIntakeOutput
-from app.services.claim_intake_agent import process_claim_intake
-from app.services.claim_intake_tools import extract_claim_input
+from app.intake.schemas import ClaimIntakeInput, ClaimIntakeOutput
+from app.intake.agent import process_claim_intake
+from app.intake.tools import extract_claim_input
 
 router = APIRouter(prefix="/intake", tags=["claim-intake"])
 

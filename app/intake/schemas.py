@@ -61,6 +61,10 @@ class ClaimIntakeOutput(BaseModel):
     claim_reference_draft: str
     policy_no: str
     claimant_name: str
+    id_document_type: IdDocumentType
+    id_document_no: str
+    date_of_birth: date
+    claimant_relationship: ClaimantRelationship
     claim_type: ClaimType
     incident_date: date
     claim_date: date
@@ -69,3 +73,5 @@ class ClaimIntakeOutput(BaseModel):
     rejection_reason: Optional[str] = None
     missing_documents: List[str]
     intake_timestamp: datetime
+    supporting_documents: List[str] = Field(default_factory=list)
+    document_paths: Optional[dict] = Field(default_factory=dict)

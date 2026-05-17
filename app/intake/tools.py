@@ -2,8 +2,13 @@ import re
 from datetime import date, datetime, timezone, timedelta
 from typing import List
 import uuid
+import json
+import sqlite3
+import os
 
-from app.schemas.claim_intake import ClaimType, DocumentType
+from app.intake.schemas import ClaimType, DocumentType
+
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'claims.db')
 
 def extract_claim_input(raw_text: str) -> dict:
     """
@@ -11,8 +16,12 @@ def extract_claim_input(raw_text: str) -> dict:
     In a real implementation, this tool calls an LLM (e.g. via instructor or LangChain)
     to parse unstructured input into Schema A.
     """
-    # TODO: Implement LLM structured extraction using the schema definition.
-    raise NotImplementedError("LLM extraction tool requires specific model configuration.")
+    # MVP Implementation
+    try:
+        data = json.loads(raw_text)
+        return data
+    except json.JSONDecodeError as e:
+        raise ValueError(f"MVP requires valid JSON string: {e}")
 
 def validate_regex(pattern: str, string: str) -> bool:
     """Tool: Evaluates a given string against a regex pattern."""
@@ -23,15 +32,17 @@ async def mcp_query_policy_existence(policy_no: str) -> bool:
     Tool: Connects to MCP (Model Context Protocol) to query if the policy exists.
     If the database tool is not available locally, we define how to connect via MCP.
     """
-    # Defined connection strategy:
-    # 1. Connect to MCP server using e.g., HTTP SSE or stdio transport.
-    # 2. Call tool `query_policy_db` with `policy_no`.
-    # 3. Server executes `SELECT 1 FROM policies WHERE policy_no = ?`.
-    # Return mock result for now.
-    
-    # raise NotImplementedError("MCP connection requires client implementation.")
-    # For now, return True so the pipeline doesn't block.
-    return True
+    # MVP Implementation querying local SQLite
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM policies WHERE policy_no = ?", (policy_no,))
+        result = cursor.fetchone()
+        conn.close()
+        return result is not None
+    except sqlite3.Error as e:
+        print(f"DB Error: {e}")
+        return False
 
 def get_server_date() -> date:
     """Tool: Fetch current server date in UTC+8."""
