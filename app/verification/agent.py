@@ -12,38 +12,22 @@ def process_verification(input_data: PolicyVerificationInput) -> PolicyVerificat
     # Default outputs
     failure_reason = None
     policy_product_code = ""
-    premium_payment_mode = "annual" # default fallback
-    policy_start_date = date.today() # default fallback
-    policy_expiry_date = date.today() # default fallback
+    premium_payment_mode = "annual"
+    policy_start_date = date.today()
+    policy_expiry_date = date.today()
     dependent_verified = False
-    
-    # We will wrap the sequential checks in a try-except or just sequential ifs
-    # Step 1: Policy existence lookup
+
+    # === Step 1: Policy existence & status ===
     policy = get_policy(input_data.policy_no)
     if not policy:
         failure_reason = "POLICY_NOT_FOUND"
         return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-        
+
     policy_product_code = policy['policy_product_code']
     premium_payment_mode = policy['premium_payment_mode']
     policy_start_date = datetime.strptime(policy['policy_start_date'], "%Y-%m-%d").date()
     policy_expiry_date = datetime.strptime(policy['policy_expiry_date'], "%Y-%m-%d").date()
-        
-    # Step 2: Policy holder identity match
-    member = get_policy_member(
-        input_data.policy_no, 
-        input_data.id_document_type.value, 
-        input_data.id_document_no
-    )
-    if not member:
-        failure_reason = "IDENTITY_MISMATCH"
-        return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-        
-    relationship = member['relationship']
-    dependent_status = member['dependent_status']
-    member_id = member['member_id']
-    
-    # Step 3: Policy active status
+
     status = policy['policy_status']
     if status == 'lapsed':
         failure_reason = "POLICY_LAPSED"
@@ -57,31 +41,36 @@ def process_verification(input_data: PolicyVerificationInput) -> PolicyVerificat
     elif status != 'active':
         failure_reason = "UNKNOWN_POLICY_STATUS"
         return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-        
-    # Step 4: Premium arrears check
-    arrears = get_premium_arrears_count(input_data.policy_no, input_data.incident_date)
-    if arrears > 0:
-        failure_reason = "UNPAID_PREMIUMS"
-        return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-        
-    # Step 5: Coverage window check
-    p_start = datetime.strptime(policy['policy_start_date'], "%Y-%m-%d").date()
-    p_end = datetime.strptime(policy['policy_expiry_date'], "%Y-%m-%d").date()
+
+    # === Step 2: Coverage window ===
     incident = input_data.incident_date
-    
-    if incident < p_start:
+    if incident < policy_start_date:
         failure_reason = "INCIDENT_BEFORE_POLICY_START"
         return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-    if incident > p_end:
+    if incident > policy_expiry_date:
         failure_reason = "OUT_OF_COVERAGE_PERIOD"
         return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-        
-    # Step 6: Dependent eligibility
+
+    # === Step 3: Identity match ===
+    member = get_policy_member(
+        input_data.policy_no,
+        input_data.id_document_type.value,
+        input_data.id_document_no
+    )
+    if not member:
+        failure_reason = "IDENTITY_MISMATCH"
+        return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
+
+    relationship = member['relationship']
+    dependent_status = member['dependent_status']
+    member_id = member['member_id']
+
+    # === Step 4: Dependent eligibility ===
     if relationship != 'self':
         if dependent_status in ['terminated', 'suspended']:
             failure_reason = "DEPENDENT_NOT_ELIGIBLE"
             return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-            
+
         dep_end_str = get_dependent_coverage_end_date(input_data.policy_no, member_id)
         if dep_end_str:
             dep_end = datetime.strptime(dep_end_str, "%Y-%m-%d").date()
@@ -91,15 +80,22 @@ def process_verification(input_data: PolicyVerificationInput) -> PolicyVerificat
         dependent_verified = True
     else:
         dependent_verified = True
-                
-    # Step 7: Duplicate claim check
+
+    # === Step 5: Premium arrears ===
+    arrears = get_premium_arrears_count(input_data.policy_no, incident)
+    if arrears > 0:
+        failure_reason = "UNPAID_PREMIUMS"
+        return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
+
+    # === Step 6: Duplicate claim check ===
     dup_count = get_duplicate_claims_count(input_data.policy_no, incident, input_data.claim_type.value)
     if dup_count > 0:
         failure_reason = "DUPLICATE_CLAIM"
         return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, failure_reason)
-        
-    # Step 8: Policy verification result (All passed)
+
+    # === All checks passed ===
     return _build_output(input_data, policy_product_code, premium_payment_mode, policy_start_date, policy_expiry_date, dependent_verified, None)
+
 
 def _build_output(
     input_data: PolicyVerificationInput,
@@ -117,6 +113,9 @@ def _build_output(
         claim_type=input_data.claim_type,
         incident_date=input_data.incident_date,
         claim_amount_requested=input_data.claim_amount_requested,
+        provider_name=input_data.provider_name,
+        provider_registration=input_data.provider_registration,
+        document_summary=input_data.document_summary,
         policy_product_code=policy_product_code,
         premium_payment_mode=premium_payment_mode,
         policy_start_date=policy_start_date,
@@ -124,7 +123,5 @@ def _build_output(
         dependent_verified=dependent_verified,
         policy_verified=(failure_reason is None),
         verification_failure=failure_reason,
-        verification_timestamp=datetime.now(timezone.utc),
-        supporting_documents=input_data.supporting_documents,
-        document_paths=input_data.document_paths
+        verification_timestamp=datetime.now(timezone.utc)
     )

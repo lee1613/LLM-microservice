@@ -1,3 +1,14 @@
+---
+# ── Secret: VULTR API key ─────────────────────────────────────────────────────
+apiVersion: v1
+kind: Secret
+metadata:
+  name: llm-secrets
+type: Opaque
+stringData:
+  VULTR_SERVERLESS_INFERENCE_API_KEY: "REPLACE_WITH_YOUR_KEY"
+---
+# ── Deployment ────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,7 +29,8 @@ spec:
         - name: dockerhub-creds
       containers:
         - name: api
-          image: lee1613/llm-microservice:v1
+          image: lee1613/llm-microservice:v2
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
@@ -27,31 +39,31 @@ spec:
                 secretKeyRef:
                   name: llm-secrets
                   key: VULTR_SERVERLESS_INFERENCE_API_KEY
-            - name: GEMINI_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: llm-secrets
-                  key: GEMINI_API_KEY
+            - name: PYTHONIOENCODING
+              value: "utf-8"
           readinessProbe:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /health
               port: 8000
-            initialDelaySeconds: 15
+            initialDelaySeconds: 30
             periodSeconds: 30
+            failureThreshold: 3
           resources:
             requests:
               cpu: "250m"
-              memory: "256Mi"
+              memory: "512Mi"
             limits:
               cpu: "1000m"
-              memory: "512Mi"
+              memory: "1Gi"
 ---
+# ── Service: LoadBalancer ─────────────────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:

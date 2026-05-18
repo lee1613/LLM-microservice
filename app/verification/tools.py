@@ -3,7 +3,7 @@ import os
 from datetime import date
 from typing import Optional, Dict, Any, Tuple
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'claims.db')
+DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)

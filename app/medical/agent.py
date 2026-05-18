@@ -1,247 +1,354 @@
-import os
+import re
 import json
-from datetime import datetime, timezone, date
-from typing import Dict, Any, List
+import os
+from datetime import datetime, timezone, timedelta, date
 from openai import OpenAI
+from dotenv import load_dotenv
 
-from app.medical.schemas import MedicalReviewInput, MedicalReviewOutput, MedicalDetails
+from app.medical.schemas import (
+    MedicalReviewInput, MedicalReviewOutput, CptCodeAssessment, ClaimType
+)
 from app.medical.tools import (
-    get_provider,
-    is_icd10_valid,
-    is_cpt_valid,
-    is_cpt_icd10_plausible,
-    get_triggered_exclusions,
-    get_pre_auth,
-    get_physician,
-    is_medically_necessary,
-    get_rps_benchmark,
-    check_substance_abuse_coverage
+    mcp_lookup_provider, mcp_lookup_physician,
+    nlm_validate_icd10, lookup_cpt_code, get_rps_benchmark, get_pre_authorisation
 )
 
-# Initialize Vultr Serverless Inference
-vultr_api_key = os.environ.get('VULTR_SERVERLESS_INFERENCE_API_KEY')
-if not vultr_api_key:
-    # Try to load from .env
-    env_path = os.path.join(os.path.dirname(__file__), '..', '..', '.env')
-    if os.path.exists(env_path):
-        with open(env_path) as f:
-            for line in f:
-                if 'VULTR_SERVERLESS_INFERENCE_API_KEY' in line:
-                    vultr_api_key = line.split('=', 1)[1].strip().strip('"').strip("' ")
-
-vultr_client = OpenAI(
+load_dotenv()
+client = OpenAI(
     base_url="https://api.vultrinference.com/v1",
-    api_key=vultr_api_key
-) if vultr_api_key else None
+    api_key=os.environ.get('VULTR_SERVERLESS_INFERENCE_API_KEY')
+)
 
-def get_server_timestamp() -> datetime:
-    return datetime.now(timezone.utc)
+INPATIENT_CLAIM_TYPES = {ClaimType.hospitalisation, ClaimType.surgical, ClaimType.maternity}
 
-def extract_medical_details(document_paths: Dict[str, str]) -> MedicalDetails:
-    if not vultr_client:
-        raise RuntimeError("VULTR_SERVERLESS_INFERENCE_API_KEY is not set.")
-        
-    combined_text = ""
-    for doc_type, pdf_path in document_paths.items():
-        txt_path = pdf_path.replace('.pdf', '.txt')
-        if os.path.exists(txt_path):
-            with open(txt_path, 'r', encoding='utf-8') as f:
-                combined_text += f"\n\n--- {doc_type.upper()} ---\n{f.read()}"
-    
-    prompt = f"""
-    You are a medical billing data extraction assistant.
-    Extract the following details from the provided clinical documents.
-    Return ONLY a valid JSON object matching this schema exactly, nothing else:
-    {{
-        "primary_diagnosis_icd10": "string",
-        "procedure_cpt_codes": ["string"],
-        "admission_date": "YYYY-MM-DD" or null,
-        "discharge_date": "YYYY-MM-DD" or null,
-        "attending_physician": "string",
-        "physician_license_no": "string",
-        "pre_authorisation_no": "string" or null (also known as Authorization Number)
-    }}
-    
-    Documents:
-    {combined_text}
+# ─────────────────────────────────────────────────────────────────────────────
+# Tool definitions handed to the LLM
+# ─────────────────────────────────────────────────────────────────────────────
+
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "mcp_lookup_provider",
+            "description": (
+                "[MCP Tool] Queries the external MOH accredited provider registry using the "
+                "provider's registration number. Returns accreditation metadata including panel_status, "
+                "certification_body, accreditation_expiry_date, registry_source, and provider_name."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "provider_registration": {
+                        "type": "string",
+                        "description": "The provider registration number, e.g. 'MOH-HOSP-00142'."
+                    }
+                },
+                "required": ["provider_registration"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "mcp_lookup_physician",
+            "description": (
+                "[MCP Tool] Queries the external Singapore Medical Council (SMC) physician licence "
+                "registry using the MCR licence number. Returns physician metadata including status, "
+                "full_name, specialty, institution, expiry_date, and registry_url."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "physician_license_no": {
+                        "type": "string",
+                        "description": "The MCR licence number, e.g. 'MCR-10234A'."
+                    }
+                },
+                "required": ["physician_license_no"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "nlm_validate_icd10",
+            "description": (
+                "Queries the NLM Clinical Tables ICD-10-CM API to validate an ICD-10 code. "
+                "Returns whether the code is valid, its official description, and the API source."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "The ICD-10-CM code to validate, e.g. 'J18.9'."
+                    }
+                },
+                "required": ["code"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_rps_benchmark",
+            "description": (
+                "Queries the Reference Price Schedule to get benchmark prices for CPT codes. "
+                "Returns a dict of {cpt_code: unit_price, '__total__': total_benchmark_sgd}."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "cpt_codes": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "List of CPT codes, e.g. ['99232', '71046']."
+                    },
+                    "provider_type": {
+                        "type": "string",
+                        "description": "'hospital' for inpatient claim types, 'clinic' for outpatient."
+                    },
+                    "setting": {
+                        "type": "string",
+                        "description": "'inpatient' for hospitalisation/surgical/maternity, 'outpatient' otherwise."
+                    }
+                },
+                "required": ["cpt_codes", "provider_type", "setting"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "lookup_cpt_code",
+            "description": (
+                "Looks up a CPT/HCPCS code in the local CMS Physician Fee Schedule reference "
+                "database (built from CMS 2024 PFS RVU data). Returns whether the code is a "
+                "valid, active CPT code, its official CMS short description, and the data source. "
+                "MUST be called for every CPT code before assessing plausibility."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "code": {
+                        "type": "string",
+                        "description": "The 5-digit CPT code to look up, e.g. '99232'."
+                    }
+                },
+                "required": ["code"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_pre_authorisation",
+            "description": (
+                "Queries the pre_authorisations database table for a given pre-auth number. "
+                "Returns the PA record including status, policy_no, incident_date, expiry_date, "
+                "or null if not found."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "pre_auth_no": {
+                        "type": "string",
+                        "description": "Pre-authorisation number, e.g. 'PA-2025-110001'."
+                    }
+                },
+                "required": ["pre_auth_no"]
+            }
+        }
+    }
+]
+
+# Map tool names to their actual Python functions
+TOOL_DISPATCH = {
+    "mcp_lookup_provider":  lambda args: mcp_lookup_provider(args["provider_registration"]),
+    "mcp_lookup_physician": lambda args: mcp_lookup_physician(args["physician_license_no"]),
+    "nlm_validate_icd10":   lambda args: nlm_validate_icd10(args["code"]),
+    "lookup_cpt_code":      lambda args: lookup_cpt_code(args["code"]),
+    "get_rps_benchmark":    lambda args: get_rps_benchmark(args["cpt_codes"], args["provider_type"], args["setting"]),
+    "get_pre_authorisation":lambda args: get_pre_authorisation(args["pre_auth_no"]),
+}
+
+
+def _run_agentic_medical_review(input_data: MedicalReviewInput, check_date: str) -> dict:
     """
-    
-    response = vultr_client.chat.completions.create(
-        model="vultr/got-qwen-120b-normalize",
-        messages=[
-            {"role": "system", "content": "You are a data extraction AI. Output strictly valid JSON."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.1
+    Runs the LLM in an agentic tool-calling loop.
+    The LLM is given tools and must call them to gather evidence, then produce a structured JSON verdict.
+    """
+    ds = input_data.document_summary
+    is_inpatient = input_data.claim_type in INPATIENT_CLAIM_TYPES
+    provider_type = "hospital" if is_inpatient else "clinic"
+    setting = "inpatient" if is_inpatient else "outpatient"
+    requires_pre_auth = input_data.claim_type in INPATIENT_CLAIM_TYPES
+
+    system_prompt = f"""You are a medical review agent for a health insurance company. 
+You have access to tools to gather evidence. Use them to perform a complete medical review.
+
+You MUST use the tools in this order:
+1. Call mcp_lookup_provider with provider_registration="{input_data.provider_registration}"
+2. Call mcp_lookup_physician with physician_license_no="{ds.physician_license_no or 'N/A'}"
+3. Call nlm_validate_icd10 with code="{ds.primary_diagnosis_icd10}"
+4. For EACH CPT code in {ds.procedure_cpt_codes or []}, call lookup_cpt_code to verify it exists in the CMS PFS database before assessing clinical plausibility.
+5. Call get_rps_benchmark with cpt_codes={ds.procedure_cpt_codes or []}, provider_type="{provider_type}", setting="{setting}"
+{"6. Call get_pre_authorisation with pre_auth_no='" + (ds.pre_authorisation_no or '') + "'" if requires_pre_auth and ds.pre_authorisation_no else ("6. Pre-auth is NOT required for this claim type." if not requires_pre_auth else "6. pre_authorisation_no is null — pre-auth document missing, this is a failure.")}
+
+After gathering all evidence, return ONLY valid JSON (no markdown, no code fences) with this structure:
+{{
+  "non_panel_flag": <bool>,
+  "accreditation_claim": "<sourced string citing registry source and check date {check_date}>",
+  "provider_name_mismatch": <bool>,
+  "physician_licence_claim": "<sourced string citing SMC registry and check date {check_date}>",
+  "physician_licence_valid": <bool>,
+  "icd10_valid": <bool>,
+  "icd10_description": "<description from NLM>",
+  "rps_benchmark": <number>,
+  "rps_per_code": {{}},
+  "pre_auth_verified": <bool>,
+  "pre_auth_failure": <"PRE_AUTH_INVALID"|"PRE_AUTH_EXPIRED"|null>,
+  "coding_assessment": [
+    {{"cpt_code": "<code>", "valid": <bool>, "plausible": <bool>, "reasoning": "<1-sentence citing clinical standards>"}}
+  ],
+  "medical_necessity_confirmed": <bool>,
+  "medical_review_notes": "<≤100 word plain-language verdict>"
+}}
+
+CPT plausibility rules:
+- You MUST call lookup_cpt_code for each CPT code first. If lookup_cpt_code returns found=false, mark valid=false.
+- If found=true, use the CMS short_descriptor as the authoritative description of the procedure.
+- Base plausibility on established clinical standards and standard-of-care guidelines.
+- A chest X-ray (CPT 71046) is clinically plausible for pneumonia (J18.9) because imaging is standard of care.
+- Only mark implausible if the procedure is genuinely inappropriate or contradicted by the diagnosis.
+- In reasoning, cite the CMS short_descriptor and the data source returned by lookup_cpt_code.
+
+Accreditation/licence rules:
+- accreditation_claim and physician_licence_claim MUST cite the registry source and check date {check_date}.
+- If non_panel_flag=true, accreditation_claim must state the specific reason.
+- If physician_licence_valid=false, physician_licence_claim must state the specific reason.
+"""
+
+    user_msg = f"""Perform a medical review for this claim:
+
+Claim Reference: {input_data.claim_reference_draft}
+Policy: {input_data.policy_no}
+Claim Type: {input_data.claim_type.value}
+Incident Date: {input_data.incident_date}
+Provider: {input_data.provider_name} ({input_data.provider_registration})
+Provider on Bill: {ds.provider_name_on_bill}
+Physician: {ds.attending_physician} | Licence: {ds.physician_license_no}
+ICD-10: {ds.primary_diagnosis_icd10}
+CPT Codes: {ds.procedure_cpt_codes}
+Pre-Auth No: {ds.pre_authorisation_no}
+Total Billed: SGD {ds.total_billed_amount}
+Claimable Ceiling: SGD {input_data.claimable_ceiling}
+Admission: {ds.admission_date} → Discharge: {ds.discharge_date}
+Clinical Narrative: {ds.summary_narrative}
+
+Gather evidence using tools, then return the JSON verdict."""
+
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_msg}
+    ]
+
+    # Agentic tool-calling loop
+    response = client.chat.completions.create(
+        model="nvidia/DeepSeek-V3.2-NVFP4",
+        messages=messages,
+        tools=TOOLS,
+        tool_choice="auto"
     )
-    
-    content = response.choices[0].message.content
-    
-    # Strip markdown if present
-    if "```json" in content:
-        content = content.split("```json")[1].split("```")[0].strip()
-    elif "```" in content:
-        content = content.split("```")[1].strip()
-        
-    # <think> tags handling for reasoning models
-    if "</think>" in content:
-        content = content.split("</think>")[1].strip()
-        
-    data = json.loads(content)
-    
-    # Parse dates
-    def parse_date(d):
-        if d:
-            try:
-                return datetime.strptime(d, "%Y-%m-%d").date()
-            except ValueError:
-                return None
-        return None
-        
-    return MedicalDetails(
-        primary_diagnosis_icd10=data.get('primary_diagnosis_icd10', ''),
-        procedure_cpt_codes=data.get('procedure_cpt_codes', []),
-        admission_date=parse_date(data.get('admission_date')),
-        discharge_date=parse_date(data.get('discharge_date')),
-        attending_physician=data.get('attending_physician', ''),
-        physician_license_no=data.get('physician_license_no', ''),
-        pre_authorisation_no=data.get('pre_authorisation_no')
-    )
+
+    response_message = response.choices[0].message
+
+    while response_message.tool_calls:
+        messages.append(response_message)
+        for tool_call in response_message.tool_calls:
+            fn_name = tool_call.function.name
+            raw_args = (tool_call.function.arguments or "").strip()
+            fn_args = json.loads(raw_args) if raw_args else {}
+            fn_result = TOOL_DISPATCH[fn_name](fn_args)
+            messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": fn_name,
+                "content": json.dumps(fn_result, default=str)
+            })
+
+        response = client.chat.completions.create(
+            model="nvidia/DeepSeek-V3.2-NVFP4",
+            messages=messages,
+            tools=TOOLS,
+            tool_choice="auto"
+        )
+        response_message = response.choices[0].message
+
+    content = response_message.content
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
+    content = re.sub(r'^```(?:json)?', '', content.strip(), flags=re.MULTILINE).strip()
+    content = re.sub(r'```$', '', content.strip(), flags=re.MULTILINE).strip()
+    return json.loads(content.strip())
+
 
 def process_medical_review(input_data: MedicalReviewInput) -> MedicalReviewOutput:
-    # 0. Extraction
-    try:
-        med_details = extract_medical_details(input_data.document_paths or {})
-    except Exception as e:
-        print(f"Extraction failed: {e}")
-        # Return a failure if extraction breaks
-        return _build_output(input_data, False, "EXTRACTION_FAILED", False, False, None, 0.0, 0.0, False, ["EXTRACTION_FAILED"])
+    now = datetime.now(timezone.utc)
+    check_date = now.strftime("%Y-%m-%d")
+    ds = input_data.document_summary
 
-    failure_reason = None
-    flags = []
-    
-    icd10 = med_details.primary_diagnosis_icd10
-    cpts = med_details.procedure_cpt_codes
-    
-    # 1. Provider accreditation check
-    provider = get_provider(input_data.provider_registration)
-    non_panel_flag = False
-    if not provider:
-        non_panel_flag = True
-    else:
-        exp_date_str = provider['accreditation_expiry_date']
-        if not exp_date_str:
-            non_panel_flag = True
-        else:
-            exp_date = datetime.strptime(exp_date_str, "%Y-%m-%d").date()
-            if exp_date < input_data.incident_date or provider['panel_status'] != 'active':
-                non_panel_flag = True
-    
+    # Run the agentic loop — LLM calls all tools itself
+    llm = _run_agentic_medical_review(input_data, check_date)
+
+    # ── Assemble deterministic fields from LLM tool results ───────────────
+    non_panel_flag = bool(llm.get("non_panel_flag", True))
+    accreditation_claim = llm.get("accreditation_claim", "")
+    physician_licence_claim = llm.get("physician_licence_claim", "")
+    physician_licence_valid = bool(llm.get("physician_licence_valid", False))
+    pre_auth_verified = bool(llm.get("pre_auth_verified", True))
+    pre_auth_failure = llm.get("pre_auth_failure")
+    rps_benchmark = float(llm.get("rps_benchmark", 0.0))
+    medical_necessity_confirmed = bool(llm.get("medical_necessity_confirmed", False))
+    medical_review_notes = llm.get("medical_review_notes", "")
+    coding_assessment = [CptCodeAssessment(**c) for c in llm.get("coding_assessment", [])]
+
+    # ── Compute derived fields ─────────────────────────────────────────────
+    total_billed = ds.total_billed_amount or 0.0
+    bill_variance_pct = ((total_billed - rps_benchmark) / rps_benchmark * 100) if rps_benchmark > 0 else 0.0
+
+    # ── Build medical flags ────────────────────────────────────────────────
+    medical_flags: list[str] = []
     if non_panel_flag:
-        flags.append("NON_PANEL_PROVIDER")
-        
-    provider_type = provider['provider_type'] if provider else 'gp_clinic'
-    
-    # 2. ICD-10 Validation
-    if not is_icd10_valid(icd10):
-        return _build_output(input_data, False, "INVALID_ICD10", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-        
-    # 3. CPT Validation
-    for cpt in cpts:
-        if not is_cpt_valid(cpt):
-            return _build_output(input_data, False, "INVALID_CPT_CODE", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-        if not is_cpt_icd10_plausible(icd10, cpt):
-            return _build_output(input_data, False, "CPT_ICD10_MISMATCH", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-            
-    # 4. Exclusion Check
-    exclusions = get_triggered_exclusions(icd10, cpts)
-    if 'SUBSTANCE_ABUSE' in exclusions:
-        if check_substance_abuse_coverage(input_data.policy_no): # Actually needs policy_product_code, wait
-            exclusions.remove('SUBSTANCE_ABUSE')
-            
-    if exclusions:
-        return _build_output(input_data, False, "EXCLUSIONS_TRIGGERED", non_panel_flag, False, None, 0.0, 0.0, False, flags, exclusions)
+        medical_flags.append("NON_PANEL_PROVIDER")
+    if llm.get("provider_name_mismatch"):
+        medical_flags.append("PROVIDER_NAME_MISMATCH")
+    if bill_variance_pct > 50:
+        medical_flags.append("BILL_EXCEEDS_BENCHMARK")
 
-    # 5. Pre-authorisation check
-    pre_auth_verified = False
-    if input_data.claim_type.value in ['hospitalisation', 'surgical', 'maternity']:
-        pa_no = med_details.pre_authorisation_no
-        if not pa_no:
-            return _build_output(input_data, False, "MISSING_PRE_AUTH", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-            
-        pa = get_pre_auth(pa_no)
-        if not pa:
-            return _build_output(input_data, False, "MISSING_PRE_AUTH", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-        if pa['status'] != 'approved':
-            return _build_output(input_data, False, "PRE_AUTH_INVALID", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-        if pa['policy_no'] != input_data.policy_no:
-            return _build_output(input_data, False, "PRE_AUTH_POLICY_MISMATCH", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-            
-        pa_exp = datetime.strptime(pa['expiry_date'], "%Y-%m-%d").date()
-        if input_data.incident_date > pa_exp:
-            return _build_output(input_data, False, "PRE_AUTH_EXPIRED", non_panel_flag, False, None, 0.0, 0.0, False, flags)
-        pre_auth_verified = True
+    # ── Determine failure reason (priority order) ──────────────────────────
+    failure_reason: str | None = None
+    if not physician_licence_valid:
+        failure_reason = "INVALID_PHYSICIAN_LICENCE"
+    elif pre_auth_failure:
+        failure_reason = pre_auth_failure
+    elif not pre_auth_verified and input_data.claim_type in INPATIENT_CLAIM_TYPES:
+        failure_reason = "MISSING_PRE_AUTH" if not ds.pre_authorisation_no else "PRE_AUTH_INVALID"
     else:
-        pre_auth_verified = True
-        
-    # 6. Hospitalisation duration check
-    los = None
-    if med_details.admission_date and med_details.discharge_date:
-        if med_details.discharge_date < med_details.admission_date:
-            return _build_output(input_data, False, "INVALID_ADMISSION_DISCHARGE_DATES", non_panel_flag, pre_auth_verified, None, 0.0, 0.0, False, flags)
-        los = (med_details.discharge_date - med_details.admission_date).days
-        
-    # 7. Physician licence validation
-    phys = get_physician(med_details.physician_license_no)
-    if not phys:
-        return _build_output(input_data, False, "INVALID_PHYSICIAN_LICENCE", non_panel_flag, pre_auth_verified, los, 0.0, 0.0, False, flags)
-    if phys['status'] != 'active':
-        return _build_output(input_data, False, "INVALID_PHYSICIAN_LICENCE", non_panel_flag, pre_auth_verified, los, 0.0, 0.0, False, flags)
-    phys_exp = datetime.strptime(phys['expiry_date'], "%Y-%m-%d").date()
-    if phys_exp < input_data.incident_date:
-        return _build_output(input_data, False, "INVALID_PHYSICIAN_LICENCE", non_panel_flag, pre_auth_verified, los, 0.0, 0.0, False, flags)
-        
-    # 8. Medical necessity determination
-    necessity = True
-    for cpt in cpts:
-        if not is_medically_necessary(icd10, cpt):
-            necessity = False
-            break
-            
-    if not necessity:
-        return _build_output(input_data, False, "MEDICAL_NECESSITY_UNCONFIRMED", non_panel_flag, pre_auth_verified, los, 0.0, 0.0, False, flags)
-        
-    # 9. Bill reasonableness check
-    setting = 'inpatient' if input_data.claim_type.value in ['hospitalisation', 'surgical', 'maternity'] else 'outpatient'
-    rps_benchmark = get_rps_benchmark(cpts, provider_type, setting)
-    
-    if rps_benchmark == 0.0:
-        rps_benchmark = input_data.claim_amount_requested # fallback if no benchmark found
-        
-    variance = (input_data.claim_amount_requested - rps_benchmark) / rps_benchmark * 100
-    if variance > 50:
-        flags.append("BILL_EXCEEDS_BENCHMARK")
-        return _build_output(input_data, False, "BILL_EXCEEDS_BENCHMARK", non_panel_flag, pre_auth_verified, los, rps_benchmark, variance, necessity, flags)
-        
-    # 10. Medical review result
-    return _build_output(input_data, True, None, non_panel_flag, pre_auth_verified, los, rps_benchmark, variance, necessity, flags)
+        for ca in coding_assessment:
+            if not ca.valid and not failure_reason:
+                failure_reason = "INVALID_CPT_CODE"
+            if not ca.plausible and not failure_reason:
+                failure_reason = "CPT_ICD10_MISMATCH"
 
+    medical_review_passed = (failure_reason is None) and medical_necessity_confirmed
 
-def _build_output(
-    input_data: MedicalReviewInput,
-    passed: bool,
-    failure_reason: str,
-    non_panel_flag: bool,
-    pre_auth_verified: bool,
-    los: int,
-    rps_benchmark: float,
-    variance: float,
-    necessity: bool,
-    flags: List[str],
-    exclusions: List[str] = None
-) -> MedicalReviewOutput:
-    if exclusions is None:
-        exclusions = []
+    # ── Length of stay ─────────────────────────────────────────────────────
+    length_of_stay = None
+    if ds.admission_date and ds.discharge_date:
+        adm = ds.admission_date if isinstance(ds.admission_date, date) else datetime.strptime(str(ds.admission_date), "%Y-%m-%d").date()
+        dis = ds.discharge_date if isinstance(ds.discharge_date, date) else datetime.strptime(str(ds.discharge_date), "%Y-%m-%d").date()
+        length_of_stay = (dis - adm).days
+
     return MedicalReviewOutput(
         claim_reference_draft=input_data.claim_reference_draft,
         policy_no=input_data.policy_no,
@@ -250,17 +357,21 @@ def _build_output(
         incident_date=input_data.incident_date,
         claim_amount_requested=input_data.claim_amount_requested,
         claimable_ceiling=input_data.claimable_ceiling,
-        medical_review_passed=passed,
-        exclusions_triggered=exclusions,
-        review_failure_reason=failure_reason,
+        policy_product_code=input_data.policy_product_code,
+        provider_registration=input_data.provider_registration,
+        document_summary=ds,
+        medical_review_passed=medical_review_passed,
+        review_failure_reason=failure_reason if not medical_review_passed else None,
         non_panel_flag=non_panel_flag,
+        accreditation_claim=accreditation_claim,
+        physician_licence_claim=physician_licence_claim,
+        coding_assessment=coding_assessment,
         pre_auth_verified=pre_auth_verified,
-        length_of_stay=los,
+        length_of_stay=length_of_stay,
         rps_benchmark=rps_benchmark,
-        bill_variance_pct=variance,
-        medical_necessity_confirmed=necessity,
-        medical_flags=flags,
-        review_timestamp=get_server_timestamp(),
-        supporting_documents=input_data.supporting_documents,
-        document_paths=input_data.document_paths
+        bill_variance_pct=round(bill_variance_pct, 2),
+        medical_necessity_confirmed=medical_necessity_confirmed,
+        medical_flags=medical_flags,
+        medical_review_notes=medical_review_notes,
+        review_timestamp=now,
     )

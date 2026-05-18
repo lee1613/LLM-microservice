@@ -8,108 +8,154 @@
 
 ## A: Input
 
-Manual input submitted by the claimant or authorised representative:
+Manual input submitted by the claimant or authorised representative, plus raw scanned document files:
 
 ```yaml
-policy_no:              string    # unique policy number (alphanumeric, e.g. "HIC-2024-00123")
-policy_holder:          string    # full legal name of the primary insured
-claimant_name:          string    # name of the person receiving treatment (may differ from holder)
+policy_no:              string    # unique policy number, e.g. "HIC-2024-00123"
+claimant_name:          string    # name of the person receiving treatment
 claimant_relationship:  enum      # {self, spouse, child, parent, sibling, other_dependent}
 id_document_type:       enum      # {nric, passport, fin, birth_certificate}
 id_document_no:         string    # identity document number
 date_of_birth:          date      # claimant date of birth (YYYY-MM-DD)
-claim_date:             date      # date claim is being submitted (YYYY-MM-DD)
 incident_date:          date      # date of medical incident / treatment start (YYYY-MM-DD)
+claim_date:             date      # date claim is being submitted (YYYY-MM-DD)
 claim_type:             enum      # {hospitalisation, outpatient, surgical, dental, vision, maternity, mental_health, emergency}
+claim_amount_requested: number    # total amount being claimed (SGD)
+supporting_documents:   string[]  # declared document types, e.g. ["medical_bill", "discharge_summary"]
+scanned_files:          file[]    # raw uploaded files (PDF / image) corresponding to supporting_documents
 provider_name:          string    # name of hospital / clinic / medical provider
 provider_registration:  string    # provider registration or licence number
-claim_amount_requested: number    # total amount being claimed (SGD)
-supporting_documents:   string[]  # list of submitted document types
-                                  # e.g. ["medical_bill", "discharge_summary", "referral_letter", "prescription"]
-claimant_contact_email: string    # email for correspondence
-claimant_contact_phone: string    # phone number for correspondence
 ```
+
+## P_pre: Preconditions
+
+### Type Alignment
+- All fields must be present and non-empty.
+- `claimant_relationship` ∈ `{self, spouse, child, parent, sibling, other_dependent}`.
+- `id_document_type` ∈ `{nric, passport, fin, birth_certificate}`.
+- `claim_type` ∈ `{hospitalisation, outpatient, surgical, dental, vision, maternity, mental_health, emergency}`.
+- `date_of_birth`, `incident_date`, `claim_date` must be valid ISO 8601 dates (YYYY-MM-DD).
+- `claim_amount_requested` must be a positive number > 0.
+- `supporting_documents` must be a non-empty array of strings.
+- `scanned_files` must contain at least one readable file; each file must be ≤ 20 MB and in `{pdf, jpg, png}` format.
+- `len(scanned_files)` must equal `len(supporting_documents)` (one file per declared document type).
+
+### Format Validation
+- `policy_no` must match `^HIC-\d{4}-\d{5}$`.
+- `incident_date ≤ claim_date` and `claim_date − incident_date ≤ 365` days.
+
+### Pre-authorisation Document Gate
+- For `claim_type ∈ {hospitalisation, surgical, maternity}`: `supporting_documents` must include `pre_auth_approval` and a corresponding file must be present in `scanned_files`. If absent → reject immediately with `MISSING_PRE_AUTH_DOCUMENT` before any further processing.
+- For all other claim types: `pre_auth_approval` in `supporting_documents` is optional.
+
+### Compliance Gate
+- `policies` table must be queryable at runtime (Gate G0).
+- OCR / document-parsing service must be reachable at runtime (Gate G0.5).
 
 ## F: Processing Logic
 
-1. **Policy number format check** — Verify `policy_no` matches the exact regex pattern `^HIC-\d{4}-\d{5}$`, where:
-   - `HIC` is the fixed product prefix (Health Insurance Claim)
-   - `\d{4}` is the 4-digit year the policy was purchased (2020–2026)
-   - `\d{5}` is the 5-digit zero-padded queue number (00001–99999) assigned sequentially at purchase
-   - Example of a valid value: `HIC-2024-00123`
-   - Reject with `INVALID_POLICY_FORMAT` if the regex does not match.
-   - After format passes, query the `policies` table: `SELECT 1 FROM policies WHERE policy_no = :policy_no`. If no row is returned → reject with `POLICY_NOT_FOUND`.
+1. **Policy existence check** — Query `SELECT 1 FROM policies WHERE policy_no = :policy_no`. If no row returned → reject `POLICY_NOT_FOUND`.
 
-2. **Identity document format check** — Validate `id_document_no` against the format for `id_document_type`:
-   - `nric` → regex `^[STFG]\d{7}[A-Z]$` (e.g. `S1234567D`)
-   - `fin` → regex `^[FG]\d{7}[A-Z]$` (e.g. `G7654321K`)
-   - `passport` → regex `^[A-Z]{1,2}\d{6,9}$` (e.g. `A1234567`, `AB123456789`)
-   - `birth_certificate` → regex `^[A-Z]{2}\d{6}[A-Z]$` (e.g. `TC123456A`)
-   - Reject with `INVALID_ID_FORMAT` if the regex does not match the declared `id_document_type`.
+2. **Identity document format check** — Validate `id_document_no` against the regex for `id_document_type`:
+   - `nric` → `^[STFG]\d{7}[A-Z]$`
+   - `fin` → `^[FG]\d{7}[A-Z]$`
+   - `passport` → `^[A-Z]{1,2}\d{6,9}$`
+   - `birth_certificate` → `^[A-Z]{2}\d{6}[A-Z]$`
+   - Mismatch → reject `INVALID_ID_FORMAT`.
 
-3. **Date sanity checks:**
-   - `date_of_birth` must be strictly before today's date (`date_of_birth < claim_date`).
-   - `date_of_birth` must yield `age = floor((claim_date − date_of_birth) / 365.25)` in the range `[0, 120]`. Reject with `INVALID_DATE_OF_BIRTH` otherwise.
-   - `incident_date` must satisfy `incident_date ≤ claim_date`. Reject with `FUTURE_INCIDENT_DATE` if violated.
-   - `claim_date` must equal today's server-side date (UTC+8). Reject with `INVALID_CLAIM_DATE` if it differs.
+3. **Date sanity & submission window** — Verify `date_of_birth < incident_date ≤ claim_date`. Compute `age = floor((claim_date − date_of_birth) / 365.25)`; must be in `[0, 120]`. Compute `submission_lag = claim_date − incident_date`; if `> 365` → reject `LATE_SUBMISSION`. Reject `INVALID_DATE_OF_BIRTH` or `FUTURE_INCIDENT_DATE` on violation.
 
-4. **Claim submission window** — Compute `submission_lag = claim_date − incident_date` (calendar days). If `submission_lag > 365` → reject with `LATE_SUBMISSION` (maximum filing window is 365 days from incident).
+4. **Required documents check** — Verify minimum document set per `claim_type`:
+   - `hospitalisation` / `surgical` / `maternity` → must include `medical_bill`, `discharge_summary`, AND `pre_auth_approval`
+   - `outpatient` / `dental` / `vision` / `emergency` / `mental_health` → must include `medical_bill`
+   - Collect absent required types into `missing_documents`. If non-empty → reject `MISSING_REQUIRED_DOCUMENTS`.
 
-5. **Claim amount floor** — `claim_amount_requested` must be a positive number (`> 0.00 SGD`). Zero or negative values → reject with `INVALID_CLAIM_AMOUNT`.
+5. **Document parsing & structured summary extraction** — For each file in `scanned_files`, run OCR and extract the following fields. Produce one `document_summary` object for the entire claim (≤ 300 words total):
 
-6. **Supporting documents vocabulary check** — Each item in `supporting_documents` must be one of the recognised document type tokens:
-   `{medical_bill, discharge_summary, referral_letter, prescription, lab_report, imaging_report, specialist_memo, pre_auth_approval}`
-   Any unrecognised token → reject with `UNKNOWN_DOCUMENT_TYPE`.
+   | Field to Extract | Source Document | Used By Node |
+   |---|---|---|
+   | `total_billed_amount` (SGD) | medical_bill | Node 4 (Medical Review) |
+   | `itemised_charges[]` (item, qty, unit price) | medical_bill | Node 4 |
+   | `primary_diagnosis_icd10` (ICD-10 code) | discharge_summary / specialist_memo | Node 4 |
+   | `procedure_cpt_codes[]` (CPT codes) | discharge_summary / medical_bill | Node 4 |
+   | `symptom_onset_date` (earliest recorded date of symptoms) | discharge_summary / referral_letter | Node 3 (Eligibility) |
+   | `admission_date` / `discharge_date` (if inpatient) | discharge_summary | Node 4 |
+   | `attending_physician` + `physician_license_no` | discharge_summary | Node 4 |
+   | `pre_authorisation_no` (if present) | pre_auth_approval | Node 4 |
+   | `provider_name_on_bill` (as printed on bill) | medical_bill | Node 4 |
 
-7. **Supporting documents completeness** — Minimum required document set by `claim_type` (checked after vocabulary passes):
-   - `hospitalisation` / `surgical` → `supporting_documents` must contain `medical_bill` AND `discharge_summary`
-   - `outpatient` → must contain `medical_bill`
-   - `dental` / `vision` → must contain `medical_bill`
-   - `maternity` → must contain `medical_bill` AND `discharge_summary`
-   - `emergency` → must contain `medical_bill`
-   - Missing required types are collected into `missing_documents`. If `missing_documents` is non-empty → reject with `MISSING_REQUIRED_DOCUMENTS`.
-
-8. **Contact information validation:**
-   - `claimant_contact_email` must match the RFC 5322 simplified pattern `^[^@\s]+@[^@\s]+\.[^@\s]+$`. Reject with `INVALID_EMAIL` if it does not.
-   - `claimant_contact_phone` must match `^\+?[0-9]{8,15}$` (optional leading `+`, 8–15 digits). Reject with `INVALID_PHONE` if it does not.
-
-9. **Intake status decision** — `intake_accepted = (policy_format_valid ∧ policy_exists ∧ id_format_valid ∧ date_checks_pass ∧ within_submission_window ∧ claim_amount_requested > 0 ∧ documents_vocab_valid ∧ minimum_documents_present ∧ email_valid ∧ phone_valid)`.
-
-10. **Rejection reason** — If `intake_accepted = false`, record the first failing check (in the order listed above) as `rejection_reason`.
+   If a required extraction field cannot be read (e.g. blurry scan) → flag that field as `UNREADABLE` in `document_summary.extraction_warnings`. If `primary_diagnosis_icd10` or `total_billed_amount` is `UNREADABLE` → reject `DOCUMENT_PARSE_FAILURE`.
 
 ## B: Output
 
 ```yaml
-claim_reference_draft:  string    # temporary reference ID (e.g. "DRAFT-20240514-00789")
-policy_no:              string    # passthrough from A
-claimant_name:          string    # passthrough from A
-id_document_type:       enum      # passthrough from A
-id_document_no:         string    # passthrough from A
-date_of_birth:          date      # passthrough from A
-claimant_relationship:  enum      # passthrough from A
-claim_type:             enum      # passthrough from A
-incident_date:          date      # passthrough from A
-claim_date:             date      # passthrough from A
-claim_amount_requested: number    # passthrough from A
+claim_reference_draft:  string    # temporary ID, e.g. "DRAFT-20240514-00789"
+policy_no:              string    # passthrough
+claimant_name:          string    # passthrough
+id_document_type:       enum      # passthrough
+id_document_no:         string    # passthrough
+date_of_birth:          date      # passthrough
+claimant_relationship:  enum      # passthrough
+claim_type:             enum      # passthrough
+incident_date:          date      # passthrough
+claim_date:             date      # passthrough
+claim_amount_requested: number    # passthrough
+provider_name:          string    # passthrough
+provider_registration:  string    # passthrough
 intake_accepted:        bool      # overall intake result
-rejection_reason:       string?   # null if accepted; first failing check if not
-missing_documents:      string[]  # list of required but absent document types (empty if none)
-intake_timestamp:       datetime  # server-side timestamp of intake record creation
+rejection_reason:       string?   # null if accepted; first failing check code if not
+missing_documents:      string[]  # required but absent document types (empty if none)
+intake_timestamp:       datetime  # server-side timestamp
+document_summary:       object    # structured extraction from scanned_files (see below)
+  total_billed_amount:        number    # SGD total as printed on medical bill
+  itemised_charges:           object[]  # [{description, quantity, unit_price}]
+  primary_diagnosis_icd10:    string    # e.g. "J18.9" — primary ICD-10 code
+  procedure_cpt_codes:        string[]  # e.g. ["99213", "27447"]
+  symptom_onset_date:         date?     # earliest recorded symptom date; null if not stated
+  admission_date:             date?     # null for outpatient claims
+  discharge_date:             date?     # null for outpatient claims
+  attending_physician:        string    # name of treating doctor as stated on discharge summary
+  physician_license_no:       string    # e.g. "MCR-12345A" — used by Node 4 for SMC registry lookup
+  pre_authorisation_no:       string?   # extracted from pre_auth_approval document; null if not submitted
+  provider_name_on_bill:      string    # provider name as printed on bill
+  extraction_warnings:        string[]  # fields flagged UNREADABLE (empty if all extracted)
+  summary_narrative:          string    # ≤ 150-word plain-language summary of the claim event
 ```
 
-## P: Postcondition Checklist
+## P_post: Postconditions
 
-AI verification checks — all must pass for CONTRACT satisfaction:
+### Correctness
+- `policy_no` and `claimant_name` in B match A exactly.
+- `intake_accepted` is boolean (not null, not missing).
+- If `intake_accepted = false` → `rejection_reason` is one of `{POLICY_NOT_FOUND, INVALID_ID_FORMAT, INVALID_DATE_OF_BIRTH, FUTURE_INCIDENT_DATE, LATE_SUBMISSION, MISSING_PRE_AUTH_DOCUMENT, MISSING_REQUIRED_DOCUMENTS, DOCUMENT_PARSE_FAILURE}`.
+- If `intake_accepted = true` → `rejection_reason` is null and `missing_documents` is empty.
+- `claim_reference_draft` is non-empty and follows `DRAFT-YYYYMMDD-#####` format.
+- `intake_timestamp` is valid ISO 8601, not future-dated.
 
-- [ ] `policy_no` in B matches `policy_no` in A
-- [ ] `claimant_name` in B matches `claimant_name` in A
-- [ ] `intake_accepted` is boolean (not null, not missing)
-- [ ] If `intake_accepted = false` → `rejection_reason` is a non-empty string identifying the first failing check
-- [ ] If `intake_accepted = true` → `rejection_reason` is null
-- [ ] `claim_date − incident_date ≤ 365` (submission window invariant)
-- [ ] `incident_date ≤ claim_date` (temporal ordering invariant)
-- [ ] `claim_amount_requested > 0` if `intake_accepted = true`
-- [ ] `missing_documents` contains only document types that are required for `claim_type` but absent from `supporting_documents`
-- [ ] `claim_reference_draft` is non-empty and follows the DRAFT-YYYYMMDD-##### format
-- [ ] `intake_timestamp` is valid ISO 8601, not future-dated, and within ±5 minutes of `claim_date`
-- [ ] No SPT violation: intake decision is specific to this submission; no generalisation about claimant demographics
+### Document Summary Constraints
+- `document_summary` must be present whenever `intake_accepted = true`.
+- `document_summary.primary_diagnosis_icd10` must match `^[A-Z]\d{2}(\.\d{1,4})?$` (valid ICD-10 format).
+- `document_summary.procedure_cpt_codes` must be a non-empty array; each code must match `^\d{5}$`.
+- `document_summary.total_billed_amount` must be > 0 and reconcile within ±5% of `claim_amount_requested` (large discrepancy flags potential fraud; does not reject but adds `AMOUNT_DISCREPANCY` to `extraction_warnings`).
+- `document_summary.symptom_onset_date`, if present, must satisfy `symptom_onset_date ≤ incident_date` (cannot report symptoms after the incident).
+- `document_summary.summary_narrative` must be ≤ 150 words and must reference: (1) the diagnosis, (2) the treatment performed, and (3) the total billed amount.
+- `document_summary.extraction_warnings` must list every field that could not be extracted; must be an empty array if all fields were successfully parsed.
+- `document_summary.provider_name_on_bill` must be a non-empty string (used by Node 4 to cross-check against `accredited_providers`).
+- `document_summary.attending_physician` must be a non-empty string (used by Node 4 for physician name cross-check against SMC registry).
+- `document_summary.pre_authorisation_no` must be a non-null, non-empty string when `claim_type ∈ {hospitalisation, surgical, maternity}`; must satisfy `^PA-\d{4}-\d{6}$` if present.
+
+### Rationale Logical Soundness (summary_narrative)
+- If `intake_accepted = true` → `summary_narrative` must not contain any language indicating rejection, failure, or denial of the intake.
+- If `intake_accepted = false` → `summary_narrative` must explicitly reference the `rejection_reason` code (e.g. must name or describe the failing condition, not a different unrelated reason).
+- The diagnosis referenced in `summary_narrative` must be consistent with `document_summary.primary_diagnosis_icd10` — the ICD-10 code or its plain-language equivalent must appear or be described.
+- The billed amount cited in `summary_narrative` must be within ±10% of `document_summary.total_billed_amount` (no fabricated figures).
+- The type of treatment described must be consistent with the declared `claim_type` (e.g. a surgical narrative must not describe an outpatient dental visit).
+- `summary_narrative` must not attribute symptoms, treatments, or amounts not grounded in the extracted `document_summary` fields.
+
+## Circus Executor
+
+**stage_type:** llm-assisted  
+**agent_role:** claim-intake-agent  
+**routing_priority:** high  
+**trust_gate_L1:** 70 // structural input validation — moderate threshold per InsClaims-PolicyDoc §4.2  
+**trust_gate_L2:** 85 // intake decision gates the entire downstream pipeline — high threshold per WorkbenchIQ governance standard

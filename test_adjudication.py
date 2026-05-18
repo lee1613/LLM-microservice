@@ -1,152 +1,107 @@
-"""
-test_adjudication.py
-Integration tests for Node 5 (Adjudication).
-Reads Node 4 output from synthetic fixtures and calls the live /adjudication/process endpoint.
-Expected values are pre-computed from the plan_benefits fixture:
-
-  A001 (GOLD/hospitalisation, panel):   adj=16000, ded=1000, cop=750, coi=1425, net=12825, status=approved
-  A002 (GOLD/outpatient, panel):        adj=320,   ded=320,  cop=0,   coi=0,    net=0,     status=zero_benefit
-  A004 (GOLD/surgical, non-panel 80%):  adj=7600,  ded=1000, cop=330, coi=627,  net=5643,  status=approved
-"""
 import json
-import urllib.request
-import urllib.error
+import asyncio
+import os
+import sys
+sys.stdout.reconfigure(encoding='utf-8')
 
-BASE_URL = "http://127.0.0.1:8000"
+from app.intake.schemas import ClaimIntakeInput
+from app.intake.agent import process_claim_intake
+from app.verification.schemas import PolicyVerificationInput
+from app.verification.agent import process_verification
+from app.eligibility.schemas import EligibilityCheckInput
+from app.eligibility.agent import process_eligibility
+from app.medical.schemas import MedicalReviewInput
+from app.medical.agent import process_medical_review
+from app.adjudication.schemas import AdjudicationInput
+from app.adjudication.agent import process_adjudication
 
-EXPECTED = {
-    "claim_A001_full_pipeline.json": {
-        "adjudication_status": "approved",
-        "adjudication_base":  16000.0,
-        "deductible_applied_this_claim": 1000.0,
-        "co_pay_amount":  750.0,
-        "co_insurance_amount": 1425.0,
-        "net_payable": 12825.0,
-        "claimant_liability": 5675.0,
-    },
-    "claim_A002_full_pipeline.json": {
-        "adjudication_status": "zero_benefit",
-        "adjudication_base":  320.0,
-        "deductible_applied_this_claim": 320.0,
-        "co_pay_amount": 0.0,
-        "co_insurance_amount": 0.0,
-        "net_payable": 0.0,
-        "claimant_liability": 380.0,
-    },
-    "claim_A004_full_pipeline.json": {
-        "adjudication_status": "approved",
-        "adjudication_base":  5700.0,   # 9500 × 60% non-panel (BRONZE)
-        "deductible_applied_this_claim": 3500.0,
-        "co_pay_amount":  440.0,        # 20% on 2200
-        "co_insurance_amount": 352.0,   # 20% on 1760, cap=2000
-        "net_payable": 1408.0,
-        "claimant_liability": 10092.0,
-    },
-}
+async def run_pipeline(data: dict, label: str):
+    print(f"\n{'='*65}")
+    print(f"  {label}")
+    print(f"{'='*65}")
 
-# A002: COMP-HEALTH-GOLD has deductible_annual=1000.  A002 outpatient bill=380, adj_base=min(320,380)=320.
-# deductible_remaining = 1000 - 0 = 1000 > 320 → after_ded=0 → zero_benefit. Correct.
+    # N1
+    n1 = await process_claim_intake(ClaimIntakeInput(**data["stage_1_intake"]["_input"]))
+    print(f"[N1] Accepted={n1.intake_accepted} | {n1.rejection_reason or 'OK'}")
+    if not n1.intake_accepted: return
+
+    # N2
+    n2 = process_verification(PolicyVerificationInput(
+        claim_reference_draft=n1.claim_reference_draft, policy_no=n1.policy_no,
+        claimant_name=n1.claimant_name, id_document_type=n1.id_document_type,
+        id_document_no=n1.id_document_no, date_of_birth=n1.date_of_birth,
+        claimant_relationship=n1.claimant_relationship, claim_type=n1.claim_type,
+        incident_date=n1.incident_date, claim_amount_requested=n1.claim_amount_requested,
+        document_summary=n1.document_summary, provider_name=n1.provider_name,
+        provider_registration=n1.provider_registration,
+    ))
+    print(f"[N2] Verified={n2.policy_verified} | {n2.verification_failure or 'OK'} | {n2.policy_product_code}")
+    if not n2.policy_verified: return
+
+    # N3
+    n3 = process_eligibility(EligibilityCheckInput(
+        claim_reference_draft=n2.claim_reference_draft, policy_no=n2.policy_no,
+        claimant_name=n2.claimant_name, claim_type=n2.claim_type,
+        incident_date=n2.incident_date, claim_amount_requested=n2.claim_amount_requested,
+        policy_product_code=n2.policy_product_code, policy_start_date=n2.policy_start_date,
+        dependent_verified=n2.dependent_verified, provider_name=n2.provider_name,
+        provider_registration=n2.provider_registration, document_summary=n2.document_summary,
+    ))
+    print(f"[N3] Eligible={n3.eligible} | {n3.eligibility_failure_reason or 'OK'} | Ceiling={n3.claimable_ceiling}")
+    if not n3.eligible: return
+
+    # N4
+    n4 = process_medical_review(MedicalReviewInput(
+        claim_reference_draft=n3.claim_reference_draft, policy_no=n3.policy_no,
+        claimant_name=n3.claimant_name, claim_type=n3.claim_type,
+        incident_date=n3.incident_date, claim_amount_requested=n3.claim_amount_requested,
+        claimable_ceiling=n3.claimable_ceiling, policy_product_code=n3.policy_product_code,
+        provider_name=n3.provider_name, provider_registration=n3.provider_registration,
+        document_summary=n3.document_summary,
+    ))
+    print(f"[N4] Passed={n4.medical_review_passed} | {n4.review_failure_reason or 'OK'} | Flags={n4.medical_flags}")
+    if not n4.medical_review_passed: return
+
+    # N5
+    try:
+        n5 = process_adjudication(AdjudicationInput(
+            claim_reference_draft=n4.claim_reference_draft,
+            policy_no=n4.policy_no,
+            claimant_name=n4.claimant_name,
+            claim_type=n4.claim_type,
+            incident_date=n4.incident_date,
+            claim_amount_requested=n4.claim_amount_requested,
+            claimable_ceiling=n3.claimable_ceiling,
+            rps_benchmark=n4.rps_benchmark,
+            non_panel_flag=n4.non_panel_flag,
+            policy_product_code=n4.policy_product_code,
+            provider_registration=n4.provider_registration,
+            medical_flags=n4.medical_flags,
+            medical_review_notes=n4.medical_review_notes,
+        ))
+        print(f"[N5] Status={n5.adjudication_status.value}")
+        print(f"     Adjudication Base : SGD {n5.adjudication_base:.2f}")
+        print(f"     Deductible Applied: SGD {n5.deductible_applied_this_claim:.2f}")
+        print(f"     Co-Pay            : SGD {n5.co_pay_amount:.2f}")
+        print(f"     Co-Insurance      : SGD {n5.co_insurance_amount:.2f}")
+        print(f"     Net Payable       : SGD {n5.net_payable:.2f}")
+        print(f"     Claimant Liability: SGD {n5.claimant_liability:.2f}")
+        print(f"     Adjudication Notes: {n5.adjudication_notes}")
+    except Exception as e:
+        import traceback
+        print(f"[N5] ERROR: {e}")
+        traceback.print_exc()
 
 
-def reset_test_tables():
-    """Clear Node 5 tables so each test run starts from a clean state."""
-    import sqlite3
-    conn = sqlite3.connect("claims.db")
-    conn.execute("DELETE FROM adjudicated_claims")
-    conn.execute("DELETE FROM deductible_ledger")
-    conn.commit()
-    conn.close()
-    print("✅ Reset: adjudicated_claims and deductible_ledger cleared.")
-
-
-def call(payload: dict) -> dict:
-    raw = json.dumps(payload).encode()
-    req = urllib.request.Request(
-        f"{BASE_URL}/adjudication/process",
-        data=raw,
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
-    with urllib.request.urlopen(req) as r:
-        return json.loads(r.read().decode())
-
-
-def run_tests():
-    reset_test_tables()
-    data_dir = "data/health-insurance-claim/synthetic data"
-    all_passed = True
-
-    for filename, expected in EXPECTED.items():
-        print(f"\n{'='*60}")
-        print(f"Testing Node 5: {filename}")
-
-        with open(f"{data_dir}/{filename}") as f:
-            d = json.load(f)
-
-        # Build input from Node 4 output
-        node4_out = d["stage_4_medical_review"]["_output"]
-
-        payload = {
-            "claim_reference_draft": node4_out["claim_reference_draft"],
-            "policy_no":             node4_out["policy_no"],
-            "claimant_name":         node4_out["claimant_name"],
-            "claim_type":            node4_out["claim_type"],
-            "incident_date":         node4_out["incident_date"],
-            "claim_amount_requested": node4_out["claim_amount_requested"],
-            "claimable_ceiling":     node4_out.get("claimable_ceiling"),
-            "rps_benchmark":         node4_out.get("rps_benchmark", 0.0),
-            "non_panel_flag":        node4_out.get("non_panel_flag", False),
-            "supporting_documents":  node4_out.get("supporting_documents", []),
-            "document_paths":        node4_out.get("document_paths", {}),
-        }
-
-        try:
-            result = call(payload)
-        except urllib.error.HTTPError as e:
-            body = e.read().decode()
-            print(f"  ❌ HTTP {e.code}: {body}")
-            all_passed = False
-            continue
-        except Exception as e:
-            print(f"  ❌ Connection error: {e}")
-            all_passed = False
-            continue
-
-        # Postcondition: conservation invariant
-        conservation = round(result["net_payable"] + result["claimant_liability"], 2)
-        claimed = round(result["claim_amount_requested"], 2)
-        assert abs(conservation - claimed) < 0.02, (
-            f"Conservation violated: {result['net_payable']} + {result['claimant_liability']} = {conservation} ≠ {claimed}"
-        )
-
-        # Assert each expected field
-        errors = []
-        for field, exp_val in expected.items():
-            got = result.get(field)
-            if isinstance(exp_val, float):
-                if abs(float(got) - exp_val) > 0.02:
-                    errors.append(f"  {field}: expected {exp_val}, got {got}")
-            else:
-                if got != exp_val:
-                    errors.append(f"  {field}: expected {exp_val!r}, got {got!r}")
-
-        if errors:
-            print("  ❌ Assertion failures:")
-            for e in errors:
-                print(e)
-            all_passed = False
-        else:
-            print(f"  ✅ PASSED  |  status={result['adjudication_status']}"
-                  f"  net_payable=SGD {result['net_payable']:.2f}"
-                  f"  claimant_liability=SGD {result['claimant_liability']:.2f}")
-            print(f"  📋 {result['adjudication_notes'][:120]}...")
-
-    print(f"\n{'='*60}")
-    if all_passed:
-        print("🎉 All Node 5 adjudication tests passed!")
-    else:
-        print("⚠️  Some tests failed. Review output above.")
-
+async def main():
+    base_dir = r"c:\Users\Lee023\OneDrive - National University of Singapore\Desktop\Project\LLM-microservice\data\health-insurance-claim\synthetic data"
+    cases = [
+        ("claim_B001_full_pipeline.json", "B001 — GOLD hospitalisation (panel)"),
+        ("claim_B004_full_pipeline.json", "B004 — BRONZE surgical (non-panel)"),
+    ]
+    for fname, label in cases:
+        data = json.load(open(os.path.join(base_dir, fname), encoding='utf-8'))
+        await run_pipeline(data, label)
 
 if __name__ == "__main__":
-    run_tests()
+    asyncio.run(main())

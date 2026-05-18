@@ -1,0 +1,44 @@
+{
+  "total_billed_amount": 18500.0,
+  "itemised_charges": [
+    {
+      "description": "Ward Charges (Class B2 - 4 Nights)",
+      "quantity": 4,
+      "unit_price": 1200.0
+    },
+    {
+      "description": "Physician Consultation (Dr. Chong WL)",
+      "quantity": 4,
+      "unit_price": 250.0
+    },
+    {
+      "description": "Chest X-Ray (2 views)",
+      "quantity": 1,
+      "unit_price": 120.0
+    },
+    {
+      "description": "IV Amoxicillin-Clavulanate (5 days)",
+      "quantity": 4,
+      "unit_price": 210.0
+    },
+    {
+      "description": "Nursing Procedures & Consumables",
+      "quantity": 1,
+      "unit_price": 11740.0
+    }
+  ],
+  "primary_diagnosis_icd10": "J18.9",
+  "procedure_cpt_codes": [
+    "71046",
+    "99232"
+  ],
+  "symptom_onset_date": "2025-04-07",
+  "admission_date": "2025-04-10",
+  "discharge_date": "2025-04-14",
+  "attending_physician": "Dr. Chong Wei Liang",
+  "physician_license_no": "MCR-10234A",
+  "pre_authorisation_no": "PA-2025-110001",
+  "provider_name_on_bill": "Singapore General Hospital",
+  "extraction_warnings": [],
+  "summary_narrative": "Tan Wei Ming was admitted on 10 April 2025 with community‑acquired pneumonia (J18.9) and treated in Bunga Mas 6 ward with IV antibiotics, chest X‑ray, daily physician visits, oxygen therapy and nursing care, resulting in a total bill of SGD 18,500.00."
+}

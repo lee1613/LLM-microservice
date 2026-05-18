@@ -1,96 +1,125 @@
-from app.intake.schemas import ClaimIntakeInput, ClaimIntakeOutput, IdDocumentType
+import re
+import uuid
+import math
+from datetime import datetime
+from app.intake.schemas import ClaimIntakeInput, ClaimIntakeOutput, DocumentSummary, IdDocumentType, ClaimType
 from app.intake.tools import (
-    validate_regex,
-    mcp_query_policy_existence,
-    get_server_date,
-    get_server_timestamp,
-    calculate_age,
-    calculate_submission_lag,
-    validate_claim_amount,
-    validate_documents_vocabulary,
-    check_missing_documents,
-    generate_draft_reference
+    query_policy_existence, 
+    get_server_timestamp, 
+    extract_document_summary
 )
 
 async def process_claim_intake(input_data: ClaimIntakeInput) -> ClaimIntakeOutput:
-    """
-    Occupies the agent for following exactly how the processing logic specify.
-    Produces a standard output to be processed by the other agent.
-    """
     rejection_reason = None
     missing_documents = []
-
-    # 1. Policy number format check
-    if not validate_regex(r"^HIC-\d{4}-\d{5}$", input_data.policy_no):
-        rejection_reason = "INVALID_POLICY_FORMAT"
-    else:
-        policy_exists = await mcp_query_policy_existence(input_data.policy_no)
-        if not policy_exists:
+    
+    # Pre-Authorisation Document Gate
+    if input_data.claim_type in [ClaimType.hospitalisation, ClaimType.surgical, ClaimType.maternity]:
+        if "pre_auth_approval" not in input_data.supporting_documents:
+            rejection_reason = "MISSING_PRE_AUTH_DOCUMENT"
+            
+    # 1. Policy existence check
+    if not rejection_reason:
+        if not re.match(r"^HIC-\d{4}-\d{5}$", input_data.policy_no):
+            rejection_reason = "INVALID_POLICY_FORMAT"
+        elif not query_policy_existence(input_data.policy_no):
             rejection_reason = "POLICY_NOT_FOUND"
 
     # 2. Identity document format check
-    if rejection_reason is None:
+    if not rejection_reason:
         id_regexes = {
             IdDocumentType.nric: r"^[STFG]\d{7}[A-Z]$",
             IdDocumentType.fin: r"^[FG]\d{7}[A-Z]$",
             IdDocumentType.passport: r"^[A-Z]{1,2}\d{6,9}$",
             IdDocumentType.birth_certificate: r"^[A-Z]{2}\d{6}[A-Z]$"
         }
-        regex = id_regexes.get(input_data.id_document_type)
-        if not regex or not validate_regex(regex, input_data.id_document_no):
+        if not re.match(id_regexes[input_data.id_document_type], input_data.id_document_no):
             rejection_reason = "INVALID_ID_FORMAT"
 
-    # 3. Date sanity checks
-    if rejection_reason is None:
-        server_date = get_server_date()
-        if input_data.date_of_birth >= input_data.claim_date:
-            rejection_reason = "INVALID_DATE_OF_BIRTH"
-        else:
-            age = calculate_age(input_data.date_of_birth, input_data.claim_date)
-            if age < 0 or age > 120:
+    # 3. Date sanity & submission window
+    if not rejection_reason:
+        if not (input_data.date_of_birth < input_data.incident_date <= input_data.claim_date):
+            if input_data.date_of_birth >= input_data.incident_date:
                 rejection_reason = "INVALID_DATE_OF_BIRTH"
             elif input_data.incident_date > input_data.claim_date:
                 rejection_reason = "FUTURE_INCIDENT_DATE"
-            elif input_data.claim_date != server_date:
-                rejection_reason = "INVALID_CLAIM_DATE"
+        
+        if not rejection_reason:
+            age = math.floor((input_data.claim_date - input_data.date_of_birth).days / 365.25)
+            if age < 0 or age > 120:
+                rejection_reason = "INVALID_DATE_OF_BIRTH"
+            
+            lag = (input_data.claim_date - input_data.incident_date).days
+            if lag > 365:
+                rejection_reason = "LATE_SUBMISSION"
 
-    # 4. Claim submission window
-    if rejection_reason is None:
-        lag = calculate_submission_lag(input_data.incident_date, input_data.claim_date)
-        if lag > 365:
-            rejection_reason = "LATE_SUBMISSION"
-
-    # 5. Claim amount floor
-    if rejection_reason is None:
-        if not validate_claim_amount(input_data.claim_amount_requested):
-            rejection_reason = "INVALID_CLAIM_AMOUNT"
-
-    # 6. Supporting documents vocabulary check
-    if rejection_reason is None:
-        if not validate_documents_vocabulary(input_data.supporting_documents):
-            rejection_reason = "UNKNOWN_DOCUMENT_TYPE"
-
-    # 7. Supporting documents completeness
-    if rejection_reason is None:
-        missing_documents = check_missing_documents(
-            input_data.claim_type, input_data.supporting_documents
-        )
+    # 4. Required documents check
+    if not rejection_reason:
+        required_docs = []
+        if input_data.claim_type in [ClaimType.hospitalisation, ClaimType.surgical, ClaimType.maternity]:
+            required_docs = ["medical_bill", "discharge_summary", "pre_auth_approval"]
+        else:
+            required_docs = ["medical_bill"]
+            
+        for doc in required_docs:
+            if doc not in input_data.supporting_documents:
+                missing_documents.append(doc)
+                
         if missing_documents:
             rejection_reason = "MISSING_REQUIRED_DOCUMENTS"
 
-    # 8. Contact information validation
-    if rejection_reason is None:
-        email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-        phone_regex = r"^\+?[0-9]{8,15}$"
+    doc_summary = None
+    if not rejection_reason:
+        # 5. Document parsing & structured summary extraction
+        extracted = extract_document_summary(input_data.scanned_files, input_data.claim_type.value, input_data.claim_amount_requested)
         
-        if not validate_regex(email_regex, input_data.claimant_contact_email):
-            rejection_reason = "INVALID_EMAIL"
-        elif not validate_regex(phone_regex, input_data.claimant_contact_phone):
-            rejection_reason = "INVALID_PHONE"
+        # Format checks for extracted data
+        warnings = extracted.get("extraction_warnings", [])
+        
+        if extracted.get("total_billed_amount") is None:
+            warnings.append("total_billed_amount")
+        if extracted.get("primary_diagnosis_icd10") is None:
+            warnings.append("primary_diagnosis_icd10")
+            
+        if "total_billed_amount" in warnings or "primary_diagnosis_icd10" in warnings:
+            rejection_reason = "DOCUMENT_PARSE_FAILURE"
+        else:
+            # Check amount discrepancy
+            billed = extracted.get("total_billed_amount")
+            if billed and billed > 0:
+                diff = abs(billed - input_data.claim_amount_requested) / input_data.claim_amount_requested
+                if diff > 0.05:
+                    warnings.append("AMOUNT_DISCREPANCY")
+                    
+            # Post conditions checks on extracted data to ensure they conform
+            if extracted.get("primary_diagnosis_icd10") and not re.match(r"^[A-Z]\d{2}(\.\d{1,4})?$", extracted.get("primary_diagnosis_icd10")):
+                 warnings.append("INVALID_ICD10_FORMAT")
+                 
+            doc_summary = DocumentSummary(
+                total_billed_amount=extracted.get("total_billed_amount"),
+                itemised_charges=extracted.get("itemised_charges", []),
+                primary_diagnosis_icd10=extracted.get("primary_diagnosis_icd10"),
+                procedure_cpt_codes=extracted.get("procedure_cpt_codes", []),
+                symptom_onset_date=extracted.get("symptom_onset_date"),
+                admission_date=extracted.get("admission_date"),
+                discharge_date=extracted.get("discharge_date"),
+                attending_physician=extracted.get("attending_physician"),
+                physician_license_no=extracted.get("physician_license_no"),
+                pre_authorisation_no=extracted.get("pre_authorisation_no"),
+                provider_name_on_bill=extracted.get("provider_name_on_bill"),
+                extraction_warnings=warnings,
+                summary_narrative=extracted.get("summary_narrative")
+            )
 
-    # 9 & 10. Intake status decision & Rejection reason
+    # Final Draft Generation
+    draft_ref = ""
+    if not rejection_reason:
+        today_str = get_server_timestamp().strftime("%Y%m%d")
+        unique_id = str(uuid.uuid4().int)[:5].zfill(5)
+        draft_ref = f"DRAFT-{today_str}-{unique_id}"
+
     return ClaimIntakeOutput(
-        claim_reference_draft=generate_draft_reference() if not rejection_reason else "",
+        claim_reference_draft=draft_ref,
         policy_no=input_data.policy_no,
         claimant_name=input_data.claimant_name,
         id_document_type=input_data.id_document_type,
@@ -101,8 +130,11 @@ async def process_claim_intake(input_data: ClaimIntakeInput) -> ClaimIntakeOutpu
         incident_date=input_data.incident_date,
         claim_date=input_data.claim_date,
         claim_amount_requested=input_data.claim_amount_requested,
+        provider_name=input_data.provider_name,
+        provider_registration=input_data.provider_registration,
         intake_accepted=(rejection_reason is None),
         rejection_reason=rejection_reason,
         missing_documents=missing_documents,
-        intake_timestamp=get_server_timestamp()
+        intake_timestamp=get_server_timestamp(),
+        document_summary=doc_summary
     )

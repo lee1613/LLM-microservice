@@ -17,15 +17,26 @@
 **/compose.y*ml
 **/docker-compose*
 
-# ── Dev / test scripts ────────────────────────────────────────────
+# ── Dev / test scripts (not needed at runtime) ────────────────────
 test_*.py
+reset_db.py
+check_db.py
+check_registry.py
+inspect_cases.py
+test_import.py
 notebooks/
-generate_docs*.py
-create_realistic_pdfs.py
-convert_to_pdf.py
-ask_gemini_pdf.py
-patch_a001.py
-update_synthetic_data.py
+b002_llm_output.json
+# Exclude test output text files but NOT requirements.txt or setup_cpt_db.py
+*_output.txt
 
-# ── Local DB (seeded fresh at Docker build time) ──────────────────
+# ── Kubernetes manifests (not needed inside image) ────────────────
+k8s/
+
+# ── Stale root-level DB (data/ contains the authoritative one) ────
 claims.db
+
+# NOTE: data/ directory IS included — it contains:
+#   data/health-insurance-claim/synthetic data/database.db   (main DB)
+#   data/health-insurance-claim/synthetic data/registry.db   (provider/physician)
+#   data/cpt_reference.db                                    (CMS PFS CPT codes, built at image build time)
+#   data/health-insurance-claim/medical bills/               (PDF documents)

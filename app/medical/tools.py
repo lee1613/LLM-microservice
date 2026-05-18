@@ -1,147 +1,157 @@
+"""
+Node 4 tools — four distinct tool groups:
+
+  1. MCP-simulated registry tools (registry.db) — provider accreditation & physician licence
+  2. NLM Clinical Tables API — live ICD-10 code validation
+  3. RPS schedule query (database.db) — benchmark pricing
+  4. Pre-authorisations DB query (database.db) — pre-auth validation
+"""
 import sqlite3
 import os
-from typing import Dict, Any, List, Optional
-from datetime import date, datetime
+import requests
+from datetime import date
+from typing import Optional, Dict, Any, List
 
-DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'claims.db')
+REGISTRY_DB = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'registry.db')
+DB_PATH     = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
+CPT_DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'cpt_reference.db')
 
-def _get_db_connection():
+# ─────────────────────────────────────────────────────────────────────────────
+# GROUP 1 — MCP-simulated: Provider & Physician registry tools
+# ─────────────────────────────────────────────────────────────────────────────
+
+def mcp_lookup_provider(provider_registration: str) -> Optional[Dict[str, Any]]:
+    """
+    [MCP Tool] Queries the external MOH accredited provider registry
+    (simulated via registry.db) using the provider's registration number.
+    Returns accreditation metadata or None if not found.
+    """
+    conn = sqlite3.connect(REGISTRY_DB)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT * FROM accredited_providers WHERE provider_registration = ?",
+        (provider_registration,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def mcp_lookup_physician(physician_license_no: str) -> Optional[Dict[str, Any]]:
+    """
+    [MCP Tool] Queries the external Singapore Medical Council (SMC) physician
+    licence registry (simulated via registry.db) using the MCR licence number.
+    Returns physician metadata or None if not found.
+    """
+    conn = sqlite3.connect(REGISTRY_DB)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT * FROM physician_registry WHERE physician_license_no = ?",
+        (physician_license_no,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GROUP 2 — NLM Clinical Tables API — live ICD-10 lookup
+# ─────────────────────────────────────────────────────────────────────────────
+
+def nlm_validate_icd10(code: str) -> Dict[str, Any]:
+    """
+    Queries the NLM Clinical Tables ICD-10-CM search API to validate an ICD-10 code.
+    Returns {valid: bool, description: str, source: str}
+    """
+    url = "https://clinicaltables.nlm.nih.gov/api/icd10cm/v3/search"
+    try:
+        resp = requests.get(url, params={"sf": "code,name", "terms": code, "maxList": 5}, timeout=10)
+        data = resp.json()
+        # data format: [count, [codes], null, [[code, name], ...]]
+        matches = data[3] if len(data) > 3 and data[3] else []
+        exact = [m for m in matches if m[0].upper() == code.upper()]
+        if exact:
+            return {"valid": True, "description": exact[0][1], "source": "NLM Clinical Tables ICD-10-CM API v3"}
+        elif matches:
+            return {"valid": False, "description": f"Code not found exactly; nearest: {matches[0][0]} ({matches[0][1]})", "source": "NLM Clinical Tables ICD-10-CM API v3"}
+        else:
+            return {"valid": False, "description": f"ICD-10 code {code} not found in NLM database", "source": "NLM Clinical Tables ICD-10-CM API v3"}
+    except Exception as e:
+        return {"valid": False, "description": f"NLM API error: {e}", "source": "NLM Clinical Tables ICD-10-CM API v3"}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# GROUP 3 — RPS schedule benchmark query
+# ─────────────────────────────────────────────────────────────────────────────
+
+def get_rps_benchmark(cpt_codes: List[str], provider_type: str, setting: str) -> Dict[str, float]:
+    """
+    Queries rps_schedule for each CPT code to sum the benchmark price.
+    Returns {cpt_code: unit_price, ..., "__total__": total}
+    """
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
-    return conn
-
-def get_provider(provider_registration: str) -> Optional[Dict[str, Any]]:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT provider_name, provider_type, setting, panel_status, accreditation_expiry_date
-        FROM accredited_providers
-        WHERE provider_registration = ?
-    ''', (provider_registration,))
-    row = cursor.fetchone()
+    result = {}
+    total = 0.0
+    for code in cpt_codes:
+        row = conn.execute(
+            "SELECT unit_price FROM rps_schedule WHERE cpt_code = ? AND provider_type = ? AND setting = ?",
+            (code, provider_type, setting)
+        ).fetchone()
+        price = float(row['unit_price']) if row else 0.0
+        result[code] = price
+        total += price
     conn.close()
-    return dict(row) if row else None
+    result["__total__"] = total
+    return result
 
-def is_icd10_valid(icd10_code: str) -> bool:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1 FROM icd10_reference WHERE code = ? AND status = 'active'", (icd10_code,))
-    row = cursor.fetchone()
-    conn.close()
-    return row is not None
 
-def is_cpt_valid(cpt_code: str) -> bool:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT 1 FROM cpt_reference WHERE code = ? AND status = 'active'", (cpt_code,))
-    row = cursor.fetchone()
-    conn.close()
-    return row is not None
+# ─────────────────────────────────────────────────────────────────────────────
+# GROUP 4 — Pre-authorisation DB query
+# ─────────────────────────────────────────────────────────────────────────────
 
-def is_cpt_icd10_plausible(icd10_code: str, cpt_code: str) -> bool:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT 1 FROM icd10_cpt_plausibility 
-        WHERE icd10_code = ? AND cpt_code = ? AND plausible = 1
-    ''', (icd10_code, cpt_code))
-    row = cursor.fetchone()
-    conn.close()
-    return row is not None
+# ─────────────────────────────────────────────────────────────────────────────
+# GROUP 2b — CMS PFS CPT Reference lookup (authoritative code validity)
+# ─────────────────────────────────────────────────────────────────────────────
 
-def get_triggered_exclusions(icd10_code: str, cpt_codes: List[str]) -> List[str]:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT exclusion_key, type, value FROM exclusion_catalogue")
-    exclusions = cursor.fetchall()
-    conn.close()
-    
-    triggered = []
-    for exc in exclusions:
-        key = exc['exclusion_key']
-        etype = exc['type']
-        value = exc['value']
-        
-        if etype == 'icd10_prefix':
-            if icd10_code.startswith(value):
-                triggered.append(key)
-        elif etype == 'cpt_list':
-            cpt_list = [v.strip() for v in value.split(',')]
-            if any(cpt in cpt_list for cpt in cpt_codes):
-                triggered.append(key)
-                
-    return list(set(triggered))
-
-def get_pre_auth(pre_auth_no: str) -> Optional[Dict[str, Any]]:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT status, policy_no, authorised_amount, expiry_date
-        FROM pre_authorisations
-        WHERE pre_auth_no = ?
-    ''', (pre_auth_no,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
-
-def get_physician(license_no: str) -> Optional[Dict[str, Any]]:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT status, expiry_date, specialty
-        FROM physician_registry
-        WHERE physician_license_no = ?
-    ''', (license_no,))
-    row = cursor.fetchone()
-    conn.close()
-    return dict(row) if row else None
-
-def is_medically_necessary(icd10_code: str, cpt_code: str) -> bool:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT necessity_confirmed
-        FROM medical_necessity_guidelines
-        WHERE icd10_code = ? AND cpt_code = ?
-    ''', (icd10_code, cpt_code))
-    row = cursor.fetchone()
-    conn.close()
-    if row and row['necessity_confirmed']:
-        return True
-    return False
-
-def get_rps_benchmark(cpt_codes: List[str], provider_type: str, setting: str) -> float:
-    if not cpt_codes:
-        return 0.0
-        
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    
-    placeholders = ','.join('?' * len(cpt_codes))
-    query = f'''
-        SELECT SUM(unit_price) as rps_benchmark
-        FROM rps_schedule
-        WHERE cpt_code IN ({placeholders})
-          AND provider_type = ?
-          AND setting = ?
-    '''
-    params = tuple(cpt_codes) + (provider_type, setting)
-    cursor.execute(query, params)
-    row = cursor.fetchone()
-    conn.close()
-    
-    return row['rps_benchmark'] if row and row['rps_benchmark'] is not None else 0.0
-    
-def check_substance_abuse_coverage(policy_product_code: str) -> bool:
-    conn = _get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT substance_abuse_covered
-        FROM plan_benefits
-        WHERE policy_product_code = ? AND claim_type = 'hospitalisation'
-    ''', (policy_product_code,))
-    row = cursor.fetchone()
+def lookup_cpt_code(code: str) -> Dict[str, Any]:
+    """
+    Looks up a CPT/HCPCS code in the local CMS Physician Fee Schedule reference
+    database (built from CMS 2024/2025 PFS RVU data). Returns whether the code
+    is a valid, active CPT code, its official short description, and the source.
+    """
+    conn = sqlite3.connect(CPT_DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT hcpcs_code, short_descriptor, status_code, source FROM cpt_reference WHERE hcpcs_code = ?",
+        (code.strip(),)
+    ).fetchone()
     conn.close()
     if row:
-        return bool(row['substance_abuse_covered'])
-    return False
+        return {
+            "found": True,
+            "hcpcs_code": row["hcpcs_code"],
+            "short_descriptor": row["short_descriptor"],
+            "status_code": row["status_code"],
+            "active": row["status_code"] == "A",
+            "source": row["source"],
+        }
+    else:
+        return {
+            "found": False,
+            "hcpcs_code": code,
+            "short_descriptor": None,
+            "status_code": None,
+            "active": False,
+            "source": "CMS PFS reference DB (code not found — may be unlisted, bundled, or invalid)",
+        }
+
+
+def get_pre_authorisation(pre_auth_no: str) -> Optional[Dict[str, Any]]:
+    """Queries pre_authorisations table for a given pre-auth number."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT * FROM pre_authorisations WHERE pre_auth_no = ?",
+        (pre_auth_no,)
+    ).fetchone()
+    conn.close()
+    return dict(row) if row else None
