@@ -220,6 +220,7 @@ CPT plausibility rules:
 - If found=true, use the CMS short_descriptor as the authoritative description of the procedure.
 - Base plausibility on established clinical standards and standard-of-care guidelines.
 - A chest X-ray (CPT 71046) is clinically plausible for pneumonia (J18.9) because imaging is standard of care.
+- An ECG (CPT 93000) is clinically plausible for essential hypertension (I10) as a baseline screening tool to assess cardiac impact.
 - Only mark implausible if the procedure is genuinely inappropriate or contradicted by the diagnosis.
 - In reasoning, cite the CMS short_descriptor and the data source returned by lookup_cpt_code.
 

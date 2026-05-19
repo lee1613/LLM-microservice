@@ -9,7 +9,7 @@ from app.intake.tools import (
     extract_document_summary
 )
 
-async def process_claim_intake(input_data: ClaimIntakeInput) -> ClaimIntakeOutput:
+def process_claim_intake(input_data: ClaimIntakeInput) -> ClaimIntakeOutput:
     rejection_reason = None
     missing_documents = []
     

@@ -32,9 +32,20 @@ def get_server_timestamp() -> datetime:
     return datetime.now(timezone(timedelta(hours=8)))
 
 def parse_pdf_file_tool(rel_path: str) -> str:
-    """Tool function to be called by the LLM."""
-    base_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'documents')
-    full_path = os.path.join(base_dir, rel_path)
+    """
+    Tool function called by the LLM.
+
+    Accepts either:
+    - An **absolute path** (used for temp-uploaded files from /intake/upload).
+    - A **relative path** such as 'B001/medical_bill.pdf' (resolved against the
+      server's pre-loaded documents directory for /intake/process).
+    """
+    if os.path.isabs(rel_path):
+        full_path = rel_path
+    else:
+        base_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'documents')
+        full_path = os.path.join(base_dir, rel_path)
+
     if not os.path.exists(full_path):
         return f"Error: File {rel_path} not found."
     try:
@@ -46,10 +57,13 @@ def parse_pdf_file_tool(rel_path: str) -> str:
     except Exception as e:
         return f"Error reading {rel_path}: {e}"
 
+
 def extract_document_summary(pdf_paths: list[str], claim_type: str, requested_amount: float) -> dict:
+    # Normalize paths to use forward slashes to prevent escape character issues (like \U) on Windows
+    normalized_paths = [str(p).replace("\\", "/") for p in pdf_paths]
     prompt = f"""
 You are an expert medical claims extractor. You have access to a tool `parse_pdf_file` which reads the text of a PDF file.
-Use the tool to read the contents of the following files: {pdf_paths}.
+Use the tool to read the contents of the following files: {normalized_paths}.
 After reading all the required files, return structured information.
 Return ONLY valid JSON format. Do not use markdown blocks like ```json ... ```, just pure JSON.
 
@@ -83,7 +97,7 @@ Return raw JSON ONLY after you have gathered the data.
                     "properties": {
                         "filepath": {
                             "type": "string",
-                            "description": "The relative path to the PDF file, e.g. 'B001/medical_bill.pdf'."
+                            "description": "The path to the PDF file."
                         }
                     },
                     "required": ["filepath"]
@@ -108,8 +122,21 @@ Return raw JSON ONLY after you have gathered the data.
         messages.append(response_message)
         for tool_call in response_message.tool_calls:
             if tool_call.function.name == "parse_pdf_file":
-                args = json.loads(tool_call.function.arguments)
-                text_result = parse_pdf_file_tool(args["filepath"])
+                # Parse JSON arguments with a robust regex fallback if JSON decoding fails due to backslashes
+                filepath = ""
+                try:
+                    args = json.loads(tool_call.function.arguments)
+                    filepath = args.get("filepath", "")
+                except Exception:
+                    # Fallback to regex parsing if LLM output JSON is invalid or has bad escape characters
+                    import re
+                    match = re.search(r'"filepath"\s*:\s*"([^"]+)"', tool_call.function.arguments)
+                    if match:
+                        filepath = match.group(1)
+                
+                # Normalize the filepath again before reading
+                filepath = filepath.replace("\\", "/")
+                text_result = parse_pdf_file_tool(filepath)
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,

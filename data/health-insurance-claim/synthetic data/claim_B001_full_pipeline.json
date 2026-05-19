@@ -82,7 +82,7 @@
         {
           "description": "Nursing procedures and consumables",
           "quantity": 1,
-          "unit_price": 13580.0
+          "unit_price": 11740.0
         }
       ],
       "primary_diagnosis_icd10": "J18.9",
@@ -143,7 +143,7 @@
           {
             "description": "Nursing procedures and consumables",
             "quantity": 1,
-            "unit_price": 13580.0
+            "unit_price": 11740.0
           }
         ],
         "primary_diagnosis_icd10": "J18.9",
@@ -221,7 +221,7 @@
           {
             "description": "Nursing procedures and consumables",
             "quantity": 1,
-            "unit_price": 13580.0
+            "unit_price": 11740.0
           }
         ],
         "primary_diagnosis_icd10": "J18.9",
@@ -315,7 +315,7 @@
           {
             "description": "Nursing procedures and consumables",
             "quantity": 1,
-            "unit_price": 13580.0
+            "unit_price": 11740.0
           }
         ],
         "primary_diagnosis_icd10": "J18.9",
@@ -427,7 +427,7 @@
           {
             "description": "Nursing procedures and consumables",
             "quantity": 1,
-            "unit_price": 13580.0
+            "unit_price": 11740.0
           }
         ],
         "primary_diagnosis_icd10": "J18.9",
@@ -524,10 +524,10 @@
   "stage_6_disbursement": {
     "_payment_details": {
       "payment_mode": "direct_credit",
-      "bank_name": "DBS",
-      "bank_account_no": "0021234567",
+      "bank_name": "DBS Bank",
+      "bank_account_no": "0456789123",
       "bank_account_no_regex": "^\\d{10}$ (DBS format)",
-      "bank_branch_code": "081",
+      "bank_branch_code": "001",
       "bank_branch_code_regex": "^\\d{3}$",
       "payee_name": "Tan Wei Ming"
     },
@@ -557,7 +557,7 @@
       "net_payable": 14962.5,
       "claimant_liability": 3537.5,
       "payment_mode": "direct_credit",
-      "payee_name": "Tan Wei Ming (****4567)",
+      "payee_name": "Tan Wei Ming (DBS Bank ******9123)",
       "disbursement_date": "2025-04-17",
       "incident_date": "2025-04-10",
       "remarks": "Claim CLM-2025-0001101 approved. Adjudication base SGD 16,000 (RPS benchmark applied). Deductible SGD 1,000, co-pay 5%, co-insurance 10% applied. SGD 12,825 to be credited to DBS ****4567 by 17 Apr 2025 (T+3).",

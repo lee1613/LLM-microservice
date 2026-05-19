@@ -50,7 +50,7 @@
       "missing_documents": []
     },
     "_document_extraction": {
-      "total_billed_amount": 11800.0,
+      "total_billed_amount": 12000.0,
       "itemised_charges": [
         {
           "description": "Appendectomy (open)",
@@ -106,7 +106,7 @@
       "missing_documents": [],
       "intake_timestamp": "2025-05-10T14:00:00+08:00",
       "document_summary": {
-        "total_billed_amount": 11800.0,
+        "total_billed_amount": 12000.0,
         "itemised_charges": [
           {
             "description": "Appendectomy (open)",
@@ -175,7 +175,7 @@
       "provider_name": "Novena Surgical and Orthopaedic Centre",
       "provider_registration": "PRV-HOSP-09921",
       "document_summary": {
-        "total_billed_amount": 11800.0,
+        "total_billed_amount": 12000.0,
         "itemised_charges": [
           {
             "description": "Appendectomy (open)",
@@ -255,7 +255,7 @@
       "provider_name": "Novena Surgical and Orthopaedic Centre",
       "provider_registration": "PRV-HOSP-09921",
       "document_summary": {
-        "total_billed_amount": 11800.0,
+        "total_billed_amount": 12000.0,
         "itemised_charges": [
           {
             "description": "Appendectomy (open)",
@@ -369,7 +369,7 @@
       "policy_product_code": "COMP-HEALTH-BRONZE",
       "provider_registration": "PRV-HOSP-09921",
       "document_summary": {
-        "total_billed_amount": 11800.0,
+        "total_billed_amount": 12000.0,
         "itemised_charges": [
           {
             "description": "Appendectomy (open)",
@@ -429,7 +429,7 @@
       "pre_auth_verified": true,
       "length_of_stay": 2,
       "rps_benchmark": 8750.0,
-      "bill_variance_pct": 34.86,
+      "bill_variance_pct": 37.14,
       "medical_necessity_confirmed": true,
       "medical_flags": [
         "NON_PANEL_PROVIDER"
@@ -517,7 +517,7 @@
       "net_payable": 1120.0,
       "claimant_liability": 10680.0,
       "payment_mode": "provider_direct",
-      "payee_name": "Novena Surgical and Orthopaedic Centre",
+      "payee_name": "Novena Surgical and Orthopaedic Centre (UOB ******9921)",
       "disbursement_date": "2025-05-15",
       "incident_date": "2025-05-02",
       "remarks": "Claim CLM-2025-0001104 approved. Non-panel 60% reimbursement and SGD 3,500 annual deductible applied. Net payable SGD 1,120 disbursed directly to Novena Surgical and Orthopaedic Centre via UOB provider_direct by 15 May 2025 (T+5).",

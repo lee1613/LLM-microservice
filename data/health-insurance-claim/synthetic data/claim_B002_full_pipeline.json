@@ -1,11 +1,11 @@
 {
-  "_scenario": "B002 \u2014 Outpatient (Essential Hypertension, GP visit), COMP-HEALTH-SILVER, Spouse Dependent, NON-PANEL GP, APPROVED with reduced payout",
+  "_scenario": "B002 — Outpatient (Essential Hypertension, GP visit), COMP-HEALTH-SILVER, Spouse Dependent, NON-PANEL GP, APPROVED with reduced payout",
   "_outcome": "Node 4 flags NON_PANEL_PROVIDER. Partial deductible (SGD 180) already consumed. Approved with non-panel 70% reimbursement applied. Disbursed via cheque T+7.",
   "_arithmetic_verify": {
     "adjudication_base_pre_panel": "min(380, 190, 320) = 190.00",
     "rps_benchmark": 190.0,
     "note_bill_at_benchmark": "bill SGD 380 > rps_benchmark SGD 190, so benchmark applied",
-    "non_panel_adjustment": "190.00 \u00d7 70/100 = 133.00",
+    "non_panel_adjustment": "190.00 × 70/100 = 133.00",
     "adjudication_base_post_panel": 133.0,
     "deductible_utilised": 180.0,
     "deductible_annual": 2000.0,
@@ -13,12 +13,12 @@
     "amount_after_deductible": "max(0, 133 - 133) = 0.00",
     "note": "deductible remaining 1820 > adjudication_base 133, so full base is absorbed by deductible",
     "deductible_applied_this_claim": 133.0,
-    "co_pay": "round(0 \u00d7 20/100, 2) = 0.00",
-    "co_insurance": "round(0 \u00d7 15/100, 2) = 0.00",
+    "co_pay": "round(0 × 20/100, 2) = 0.00",
+    "co_insurance": "round(0 × 15/100, 2) = 0.00",
     "net_payable": 0.0,
     "adjudication_status": "zero_benefit",
     "claimant_liability": "round(380 - 0, 2) = 380.00",
-    "conservation_check": "0 + 380 = 380 \u2713"
+    "conservation_check": "0 + 380 = 380 ✓"
   },
   "stage_1_intake": {
     "_input": {
@@ -53,24 +53,29 @@
       "total_billed_amount": 380.0,
       "itemised_charges": [
         {
-          "description": "Consultation fee (GP)",
+          "description": "GP Consultation Fee",
           "quantity": 1,
           "unit_price": 85.0
         },
         {
-          "description": "Blood pressure monitoring + ECG",
+          "description": "Blood Pressure Monitoring & ECG",
           "quantity": 1,
           "unit_price": 60.0
         },
         {
-          "description": "Basic metabolic panel (blood test)",
+          "description": "Basic Metabolic Panel (Blood Test)",
           "quantity": 1,
           "unit_price": 45.0
         },
         {
-          "description": "Antihypertensive medications (30-day supply)",
+          "description": "Amlodipine 5mg",
           "quantity": 1,
-          "unit_price": 190.0
+          "unit_price": 90.0
+        },
+        {
+          "description": "Perindopril 4mg",
+          "quantity": 1,
+          "unit_price": 100.0
         }
       ],
       "primary_diagnosis_icd10": "I10",
@@ -110,24 +115,29 @@
         "total_billed_amount": 380.0,
         "itemised_charges": [
           {
-            "description": "Consultation fee (GP)",
+            "description": "GP Consultation Fee",
             "quantity": 1,
             "unit_price": 85.0
           },
           {
-            "description": "Blood pressure monitoring + ECG",
+            "description": "Blood Pressure Monitoring & ECG",
             "quantity": 1,
             "unit_price": 60.0
           },
           {
-            "description": "Basic metabolic panel (blood test)",
+            "description": "Basic Metabolic Panel (Blood Test)",
             "quantity": 1,
             "unit_price": 45.0
           },
           {
-            "description": "Antihypertensive medications (30-day supply)",
+            "description": "Amlodipine 5mg",
             "quantity": 1,
-            "unit_price": 190.0
+            "unit_price": 90.0
+          },
+          {
+            "description": "Perindopril 4mg",
+            "quantity": 1,
+            "unit_price": 100.0
           }
         ],
         "primary_diagnosis_icd10": "I10",
@@ -182,24 +192,29 @@
         "total_billed_amount": 380.0,
         "itemised_charges": [
           {
-            "description": "Consultation fee (GP)",
+            "description": "GP Consultation Fee",
             "quantity": 1,
             "unit_price": 85.0
           },
           {
-            "description": "Blood pressure monitoring + ECG",
+            "description": "Blood Pressure Monitoring & ECG",
             "quantity": 1,
             "unit_price": 60.0
           },
           {
-            "description": "Basic metabolic panel (blood test)",
+            "description": "Basic Metabolic Panel (Blood Test)",
             "quantity": 1,
             "unit_price": 45.0
           },
           {
-            "description": "Antihypertensive medications (30-day supply)",
+            "description": "Amlodipine 5mg",
             "quantity": 1,
-            "unit_price": 190.0
+            "unit_price": 90.0
+          },
+          {
+            "description": "Perindopril 4mg",
+            "quantity": 1,
+            "unit_price": 100.0
           }
         ],
         "primary_diagnosis_icd10": "I10",
@@ -244,7 +259,7 @@
       "waiting_period_basis": "incident_date",
       "days_from_policy_start": 689,
       "waiting_period_satisfied": true,
-      "exclusions_check": "I10 (Essential hypertension) \u2014 no exclusion match",
+      "exclusions_check": "I10 (Essential hypertension) — no exclusion match",
       "annual_utilised": 180.0,
       "annual_limit_remaining": 4820.0,
       "claimable_ceiling": "min(380, 500, 4820) = 380.00"
@@ -263,24 +278,29 @@
         "total_billed_amount": 380.0,
         "itemised_charges": [
           {
-            "description": "Consultation fee (GP)",
+            "description": "GP Consultation Fee",
             "quantity": 1,
             "unit_price": 85.0
           },
           {
-            "description": "Blood pressure monitoring + ECG",
+            "description": "Blood Pressure Monitoring & ECG",
             "quantity": 1,
             "unit_price": 60.0
           },
           {
-            "description": "Basic metabolic panel (blood test)",
+            "description": "Basic Metabolic Panel (Blood Test)",
             "quantity": 1,
             "unit_price": 45.0
           },
           {
-            "description": "Antihypertensive medications (30-day supply)",
+            "description": "Amlodipine 5mg",
             "quantity": 1,
-            "unit_price": 190.0
+            "unit_price": 90.0
+          },
+          {
+            "description": "Perindopril 4mg",
+            "quantity": 1,
+            "unit_price": 100.0
           }
         ],
         "primary_diagnosis_icd10": "I10",
@@ -310,22 +330,22 @@
       "per_claim_limit": 500.0,
       "claimable_ceiling": 380.0,
       "exclusions_triggered": [],
-      "eligibility_rationale": "Outpatient is covered under COMP-HEALTH-SILVER with 30-day waiting period. Policy started 1 Jun 2023; incident 20 Apr 2025 is 689 days later \u2014 waiting period satisfied. I10 (hypertension) triggers no exclusion. Annual limit SGD 5,000 with SGD 180 utilised, SGD 4,820 remaining. Per-claim limit SGD 500 exceeds claim amount SGD 380. Claimable ceiling SGD 380.",
+      "eligibility_rationale": "Outpatient is covered under COMP-HEALTH-SILVER with 30-day waiting period. Policy started 1 Jun 2023; incident 20 Apr 2025 is 689 days later — waiting period satisfied. I10 (hypertension) triggers no exclusion. Annual limit SGD 5,000 with SGD 180 utilised, SGD 4,820 remaining. Per-claim limit SGD 500 exceeds claim amount SGD 380. Claimable ceiling SGD 380.",
       "eligibility_timestamp": "2025-04-22T10:17:00+08:00"
     }
   },
   "stage_4_medical_review": {
     "_registry_lookups": {
       "provider_accreditation": {
-        "query": "MOH Accredited Provider Registry \u2014 lookup provider_registration='PRV-CLIN-07734'",
+        "query": "MOH Accredited Provider Registry — lookup provider_registration='PRV-CLIN-07734'",
         "result": "Not found in MOH accredited panel provider list as of 2025-04-22. CityMed Family Clinic operates as a private clinic without MOH panel accreditation.",
         "non_panel_flag": true,
         "accreditation_claim": "CityMed Family Clinic (PRV-CLIN-07734) was not found in the MOH accredited panel provider list as of 2025-04-22. Provider operates as a non-panel private clinic. Source: MOH Healthcare Institution Registry.",
-        "provider_name_match": "CityMed Family Clinic == CityMed Family Clinic \u2713"
+        "provider_name_match": "CityMed Family Clinic == CityMed Family Clinic ✓"
       },
       "physician_licence": {
-        "query": "SMC Full Medical Register \u2014 lookup physician_license_no='MCR-67890F'",
-        "result": "Dr. Farhan Bin Riza \u2014 Active, General Practice, expiry 2027-08-31",
+        "query": "SMC Full Medical Register — lookup physician_license_no='MCR-67890F'",
+        "result": "Dr. Farhan Bin Riza — Active, General Practice, expiry 2027-08-31",
         "physician_licence_claim": "Dr. Farhan Bin Riza (MCR-67890F) holds a valid and active medical licence registered with the Singapore Medical Council under General Practice. Licence verified at SMC Full Medical Register on 2025-04-22. Licence valid through 2027-08-31.",
         "licence_valid_as_of_incident": true
       },
@@ -341,7 +361,7 @@
           "80048": 45.0
         },
         "rps_benchmark": 190.0,
-        "bill_variance_pct": "((380 - 190) / 190) \u00d7 100 = 100.0%",
+        "bill_variance_pct": "((380 - 190) / 190) × 100 = 100.0%",
         "bill_exceeds_benchmark_50pct": true
       }
     },
@@ -350,19 +370,19 @@
         "cpt_code": "99213",
         "valid": true,
         "plausible": true,
-        "reasoning": "CPT 99213 (office/outpatient visit, established patient) is valid and plausible for ICD-10 I10 (Essential hypertension) \u2014 standard GP consultation for hypertension management."
+        "reasoning": "CPT 99213 (office/outpatient visit, established patient) is valid and plausible for ICD-10 I10 (Essential hypertension) — standard GP consultation for hypertension management."
       },
       {
         "cpt_code": "93000",
         "valid": true,
         "plausible": true,
-        "reasoning": "CPT 93000 (electrocardiogram, complete) is valid and plausible for ICD-10 I10 \u2014 ECG monitoring is standard in hypertension management to assess cardiac impact."
+        "reasoning": "CPT 93000 (electrocardiogram, complete) is valid and plausible for ICD-10 I10 — ECG monitoring is standard in hypertension management to assess cardiac impact."
       },
       {
         "cpt_code": "80048",
         "valid": true,
         "plausible": true,
-        "reasoning": "CPT 80048 (basic metabolic panel) is valid and plausible for ICD-10 I10 \u2014 metabolic panel monitors renal function and electrolytes in hypertension patients."
+        "reasoning": "CPT 80048 (basic metabolic panel) is valid and plausible for ICD-10 I10 — metabolic panel monitors renal function and electrolytes in hypertension patients."
       }
     ],
     "_output": {
@@ -379,24 +399,29 @@
         "total_billed_amount": 380.0,
         "itemised_charges": [
           {
-            "description": "Consultation fee (GP)",
+            "description": "GP Consultation Fee",
             "quantity": 1,
             "unit_price": 85.0
           },
           {
-            "description": "Blood pressure monitoring + ECG",
+            "description": "Blood Pressure Monitoring & ECG",
             "quantity": 1,
             "unit_price": 60.0
           },
           {
-            "description": "Basic metabolic panel (blood test)",
+            "description": "Basic Metabolic Panel (Blood Test)",
             "quantity": 1,
             "unit_price": 45.0
           },
           {
-            "description": "Antihypertensive medications (30-day supply)",
+            "description": "Amlodipine 5mg",
             "quantity": 1,
-            "unit_price": 190.0
+            "unit_price": 90.0
+          },
+          {
+            "description": "Perindopril 4mg",
+            "quantity": 1,
+            "unit_price": 100.0
           }
         ],
         "primary_diagnosis_icd10": "I10",
@@ -415,8 +440,8 @@
         "extraction_warnings": [],
         "summary_narrative": "Lim Kai Xuan, 36, visited CityMed Family Clinic on 20 Apr 2025 for essential hypertension (ICD-10 I10) management. No prior symptom onset date documented. Procedures included outpatient GP consultation (CPT 99213), ECG (CPT 93000), and basic metabolic panel (CPT 80048). Antihypertensive medications prescribed (30-day supply). Total billed SGD 380. No pre-authorisation required for outpatient claims."
       },
-      "medical_review_passed": false,
-      "review_failure_reason": "INVALID_PHYSICIAN_LICENCE",
+      "medical_review_passed": true,
+      "review_failure_reason": null,
       "non_panel_flag": true,
       "accreditation_claim": "CityMed Family Clinic (PRV-CLIN-07734) was not found in the MOH accredited panel provider list as of 2025-04-22. Provider is a non-panel private clinic. Source: MOH Healthcare Institution Registry.",
       "physician_licence_claim": "Dr. Farhan Bin Riza (MCR-67890F) holds a valid and active medical licence under General Practice, verified at SMC Full Medical Register on 2025-04-22. Valid through 2027-08-31.",
@@ -431,13 +456,13 @@
           "cpt_code": "93000",
           "valid": true,
           "plausible": true,
-          "reasoning": "ECG is standard for hypertension cardiac monitoring \u2014 plausible for I10."
+          "reasoning": "ECG is standard for hypertension cardiac monitoring — plausible for I10."
         },
         {
           "cpt_code": "80048",
           "valid": true,
           "plausible": true,
-          "reasoning": "Basic metabolic panel monitors renal and electrolyte status in hypertension \u2014 plausible for I10."
+          "reasoning": "Basic metabolic panel monitors renal and electrolyte status in hypertension — plausible for I10."
         }
       ],
       "pre_auth_verified": true,
@@ -449,7 +474,7 @@
         "BILL_EXCEEDS_BENCHMARK",
         "NON_PANEL_PROVIDER"
       ],
-      "medical_review_notes": "Non-panel GP clinic CityMed (PRV-CLIN-07734) \u2014 confirmed not on MOH panel. Dr. Farhan Bin Riza SMC licence active. CPT 99213, 93000, 80048 all clinically plausible for I10 hypertension. Bill SGD 380 is 100% above RPS benchmark SGD 190 \u2014 BILL_EXCEEDS_BENCHMARK flagged. Medical necessity confirmed. NON_PANEL_PROVIDER applies.",
+      "medical_review_notes": "Non-panel GP clinic CityMed (PRV-CLIN-07734) — confirmed not on MOH panel. Dr. Farhan Bin Riza SMC licence active. CPT 99213, 93000, 80048 all clinically plausible for I10 hypertension. Bill SGD 380 is 100% above RPS benchmark SGD 190 — BILL_EXCEEDS_BENCHMARK flagged. Medical necessity confirmed. NON_PANEL_PROVIDER applies.",
       "review_timestamp": "2025-04-22T10:18:30+08:00"
     }
   },
@@ -468,10 +493,10 @@
     },
     "_computation": {
       "adjudication_base_pre_panel": "min(380, 190, 380) = 190.00",
-      "non_panel_adjustment": "190 \u00d7 70/100 = 133.00",
+      "non_panel_adjustment": "190 × 70/100 = 133.00",
       "adjudication_base": 133.0,
       "deductible_remaining": 1820.0,
-      "amount_after_deductible": "max(0, 133 - 1820) = 0.00 \u2014 deductible fully absorbs base",
+      "amount_after_deductible": "max(0, 133 - 1820) = 0.00 — deductible fully absorbs base",
       "deductible_applied_this_claim": 133.0,
       "co_pay_amount": 0.0,
       "co_insurance_amount": 0.0,
@@ -494,12 +519,12 @@
       "net_payable": 0.0,
       "claimant_liability": 380.0,
       "adjudication_status": "zero_benefit",
-      "adjudication_notes": "Non-panel provider: 70% reimbursement applied \u2014 adjudication base reduced to SGD 133 (from RPS benchmark SGD 190). Annual deductible SGD 2,000 with SGD 180 prior utilisation; remaining SGD 1,820 fully absorbs adjudication base SGD 133. Net payable SGD 0.00 \u2014 zero_benefit outcome. Claimant liable for full SGD 380.",
+      "adjudication_notes": "Non-panel provider: 70% reimbursement applied — adjudication base reduced to SGD 133 (from RPS benchmark SGD 190). Annual deductible SGD 2,000 with SGD 180 prior utilisation; remaining SGD 1,820 fully absorbs adjudication base SGD 133. Net payable SGD 0.00 — zero_benefit outcome. Claimant liable for full SGD 380.",
       "adjudication_timestamp": "2025-04-22T10:19:00+08:00"
     }
   },
   "stage_6_disbursement": {
-    "_approval_gate": "adjudication_status = zero_benefit \u2192 halt at P_pre with ZERO_BENEFIT_NO_DISBURSEMENT",
+    "_approval_gate": "adjudication_status = zero_benefit → halt at P_pre with ZERO_BENEFIT_NO_DISBURSEMENT",
     "_output": {
       "claim_reference_draft": "DRAFT-20250422-01102",
       "policy_no": "HIC-2023-00456",
@@ -510,7 +535,7 @@
       "net_payable": 0.0,
       "claimant_liability": 380.0,
       "incident_date": "2025-04-20",
-      "remarks": "Zero benefit \u2014 SGD 133 adjudication base fully absorbed by remaining annual deductible (SGD 1,820 remaining). Non-panel provider discount applied. No insurer disbursement. Claimant responsible for full SGD 380.",
+      "remarks": "Zero benefit — SGD 133 adjudication base fully absorbed by remaining annual deductible (SGD 1,820 remaining). Non-panel provider discount applied. No insurer disbursement. Claimant responsible for full SGD 380.",
       "processing_timestamp": "2025-04-22T10:19:30+08:00"
     }
   }
