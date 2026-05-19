@@ -68,15 +68,12 @@ Return ONLY valid JSON (no markdown, no code fences):
   "extraction_notes": "<brief 1-sentence confirmation of which document section each value was read from>"
 }}
 """
-    response = client.chat.completions.create(
+    from app.core.llm_utils import call_llm_with_json_retry
+    return call_llm_with_json_retry(
+        client=client,
         model="nvidia/DeepSeek-V3.2-NVFP4",
         messages=[{"role": "user", "content": prompt}]
     )
-    content = response.choices[0].message.content
-    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
-    content = re.sub(r'^```(?:json)?', '', content.strip(), flags=re.MULTILINE).strip()
-    content = re.sub(r'```$', '', content.strip(), flags=re.MULTILINE).strip()
-    return json.loads(content.strip())
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -180,12 +177,14 @@ def process_adjudication(input_data: AdjudicationInput) -> AdjudicationOutput:
     deductible_utilised = get_deductible_utilised(input_data.policy_no, benefit_year)
 
     # ── Step 2: Adjudication base — contract formula ──────────────────────────
-    # adjudication_base = min(claim_amount_requested, rps_benchmark, claimable_ceiling)
-    adj_base = min(
-        input_data.claim_amount_requested,
-        input_data.rps_benchmark,
-        input_data.claimable_ceiling
-    )
+    if input_data.claim_type.value in ['hospitalisation', 'maternity']:
+        adj_base = min(input_data.claim_amount_requested, input_data.claimable_ceiling)
+    else:
+        adj_base = min(
+            input_data.claim_amount_requested,
+            input_data.rps_benchmark,
+            input_data.claimable_ceiling
+        )
     adj_base = round(adj_base, 2)
 
     # Non-panel adjustment
@@ -201,7 +200,10 @@ def process_adjudication(input_data: AdjudicationInput) -> AdjudicationOutput:
 
     # ── Step 4: Co-insurance & net payable ────────────────────────────────────
     co_insurance_raw    = round(amount_after_copay * (co_insurance_pct / 100.0), 2)
-    co_insurance_amount = round(min(co_insurance_raw, co_insurance_cap), 2)
+    if co_insurance_cap > 0:
+        co_insurance_amount = round(min(co_insurance_raw, co_insurance_cap), 2)
+    else:
+        co_insurance_amount = co_insurance_raw
     net_payable         = round(max(0.0, amount_after_copay - co_insurance_amount), 2)
     claimant_liability  = round(input_data.claim_amount_requested - net_payable, 2)
 

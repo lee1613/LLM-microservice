@@ -277,19 +277,24 @@ Gather evidence using tools, then return the JSON verdict."""
                 "content": json.dumps(fn_result, default=str)
             })
 
-        response = client.chat.completions.create(
+        from app.core.llm_utils import call_llm_with_json_retry
+        response_message = call_llm_with_json_retry(
+            client=client,
             model="nvidia/DeepSeek-V3.2-NVFP4",
             messages=messages,
             tools=TOOLS,
             tool_choice="auto"
         )
-        response_message = response.choices[0].message
+        if isinstance(response_message, dict):
+            return response_message # Successfully parsed JSON
 
-    content = response_message.content
-    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
-    content = re.sub(r'^```(?:json)?', '', content.strip(), flags=re.MULTILINE).strip()
-    content = re.sub(r'```$', '', content.strip(), flags=re.MULTILINE).strip()
-    return json.loads(content.strip())
+    # If it didn't call tools initially or finishes tools loop
+    from app.core.llm_utils import call_llm_with_json_retry
+    return call_llm_with_json_retry(
+        client=client,
+        model="nvidia/DeepSeek-V3.2-NVFP4",
+        messages=messages
+    )
 
 
 def process_medical_review(input_data: MedicalReviewInput) -> MedicalReviewOutput:

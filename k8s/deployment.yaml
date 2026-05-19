@@ -6,7 +6,7 @@ metadata:
   name: llm-secrets
 type: Opaque
 stringData:
-  VULTR_SERVERLESS_INFERENCE_API_KEY: "REPLACE_WITH_YOUR_KEY"
+  VULTR_SERVERLESS_INFERENCE_API_KEY: "2H2WJ4OVXWU4RJN3IYQAFSMOXR2O5O2HRBQA"
 ---
 # ── Deployment ────────────────────────────────────────────────────────────────
 apiVersion: apps/v1
@@ -16,7 +16,7 @@ metadata:
   labels:
     app: llm-microservice
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: llm-microservice
@@ -29,7 +29,7 @@ spec:
         - name: dockerhub-creds
       containers:
         - name: api
-          image: lee1613/llm-microservice:v2
+          image: lee1613/llm-microservice:v5
           imagePullPolicy: Always
           ports:
             - containerPort: 8000

@@ -84,3 +84,4 @@ class ClaimIntakeOutput(BaseModel):
     missing_documents: List[str] = Field(default_factory=list)
     intake_timestamp: datetime
     document_summary: Optional[DocumentSummary] = None
+    _debug_error: Optional[str] = None

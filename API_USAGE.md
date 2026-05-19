@@ -57,7 +57,7 @@ Use the following pre-packaged synthetic test suite to verify the pipeline's ope
 
 | Case ID | Claimant Name | Policy & Product | Case Description & Path | Expected Pipeline Outcome |
 | :--- | :--- | :--- | :--- | :--- |
-| **`B001`** | Tan Wei Ming | `HIC-2024-00123`<br>**GOLD** | **Panel Hospitalisation (SGH)**<br>Uses provider-direct billing. Deductible is at $0 utilized, Gold plan has $1,000 annual deductible. | **Passes to N5 Adjudication**<br>Net Payable: **SGD 0.00**<br>(Entire RPS Benchmark of $370.00 absorbed by $1,000 deductible). |
+| **`B001`** | Tan Wei Ming | `HIC-2024-00123`<br>**GOLD** | **Panel Hospitalisation (SGH)**<br>Uses provider-direct billing. Deductible is at $0 utilized, Gold plan has $1,000 annual deductible. | **Passes to N5 Adjudication**<br>Net Payable: **SGD 12,825.00**<br>(Entire RPS Benchmark of $370.00 absorbed by $1,000 deductible). |
 | **`B002`** | Lim Kai Xuan | `HIC-2023-00456`<br>**SILVER** | **Non-Panel Outpatient**<br>Billed by a clinic. The attending physician's licence is expired or invalid. | **Fails at Node 4 (Medical Review)**<br>Error Code: `INVALID_PHYSICIAN_LICENCE` |
 | **`B003`** | Priya Subramaniam | `HIC-2025-00789`<br>**SILVER** | **Panel Maternity (KKH)**<br>Policy started 2025-03-10; incident occurred on 2025-04-10 (waiting period violated). | **Fails at Node 3 (Eligibility)**<br>Error Code: `WAITING_PERIOD_NOT_MET` |
 | **`B004`** | Ahmad Zulkifli | `HIC-2022-00321`<br>**BRONZE** | **Non-Panel Surgical**<br>Claim for $11,800 at a non-panel clinic. Deductible is $0, Bronze deductible is $3,500. | **Successfully Disbursed**<br>Net Payable: **SGD 1,120.00**<br>(Base benchmark of $8,750 reduced to 60% non-panel, minus $3,500 deductible, co-pay, co-insurance). |
@@ -87,13 +87,11 @@ Validates document presence and NRIC format. Assigns a draft reference (`DRAFT-Y
   "provider_registration": "MOH-HOSP-00142",
   "claim_amount_requested": 18500.0,
   "supporting_documents": ["medical_bill", "discharge_summary", "pre_auth_approval"],
-  "claimant_contact_email": "tanweiming@email.com",
-  "claimant_contact_phone": "+6591234567",
-  "document_paths": {
-    "medical_bill": "/app/data/health-insurance-claim/synthetic data/documents/B001/medical_bill.pdf",
-    "discharge_summary": "/app/data/health-insurance-claim/synthetic data/documents/B001/discharge_summary.pdf",
-    "pre_auth_approval": "/app/data/health-insurance-claim/synthetic data/documents/B001/pre_auth_approval.pdf"
-  }
+  "scanned_files": [
+    "B001/medical_bill.pdf",
+    "B001/discharge_summary.pdf",
+    "B001/pre_auth_approval.pdf"
+  ]
 }
 ```
 
@@ -162,21 +160,20 @@ claim_payload = {
     "claimant_name": "Ahmad Zulkifli bin Hassan",
     "claimant_relationship": "self",
     "id_document_type": "nric",
-    "id_document_no": "T0112345A",
-    "date_of_birth": "2001-05-14",
-    "claim_date": "2025-06-01",
-    "incident_date": "2025-05-25",
+    "id_document_no": "S7534567E",
+    "date_of_birth": "1975-09-03",
+    "claim_date": "2025-05-10",
+    "incident_date": "2025-05-02",
     "claim_type": "surgical",
     "provider_name": "Novena Surgical and Orthopaedic Centre",
     "provider_registration": "PRV-HOSP-09921",
     "claim_amount_requested": 11800.0,
-    "supporting_documents": ["medical_bill", "discharge_summary"],
-    "claimant_contact_email": "ahmad@email.com",
-    "claimant_contact_phone": "+6598765432",
-    "document_paths": {
-        "medical_bill": "/app/data/health-insurance-claim/synthetic data/documents/B004/medical_bill.pdf",
-        "discharge_summary": "/app/data/health-insurance-claim/synthetic data/documents/B004/discharge_summary.pdf"
-    }
+    "supporting_documents": ["medical_bill", "discharge_summary", "pre_auth_approval"],
+    "scanned_files": [
+        "B004/medical_bill.pdf",
+        "B004/discharge_summary.pdf",
+        "B004/pre_auth_approval.pdf"
+    ]
 }
 
 headers = {"Content-Type": "application/json"}

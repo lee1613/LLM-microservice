@@ -71,44 +71,70 @@ async def process_claim_intake(input_data: ClaimIntakeInput) -> ClaimIntakeOutpu
     doc_summary = None
     if not rejection_reason:
         # 5. Document parsing & structured summary extraction
-        extracted = extract_document_summary(input_data.scanned_files, input_data.claim_type.value, input_data.claim_amount_requested)
-        
-        # Format checks for extracted data
-        warnings = extracted.get("extraction_warnings", [])
-        
-        if extracted.get("total_billed_amount") is None:
-            warnings.append("total_billed_amount")
-        if extracted.get("primary_diagnosis_icd10") is None:
-            warnings.append("primary_diagnosis_icd10")
+        try:
+            extracted = extract_document_summary(input_data.scanned_files, input_data.claim_type.value, input_data.claim_amount_requested)
             
-        if "total_billed_amount" in warnings or "primary_diagnosis_icd10" in warnings:
+            # Format checks for extracted data
+            warnings = extracted.get("extraction_warnings", [])
+            
+            if extracted.get("total_billed_amount") is None:
+                warnings.append("total_billed_amount")
+            if extracted.get("primary_diagnosis_icd10") is None:
+                warnings.append("primary_diagnosis_icd10")
+                
+            if "total_billed_amount" in warnings or "primary_diagnosis_icd10" in warnings:
+                rejection_reason = "DOCUMENT_PARSE_FAILURE"
+            else:
+                # Check amount discrepancy
+                billed = extracted.get("total_billed_amount")
+                if billed and billed > 0:
+                    diff = abs(billed - input_data.claim_amount_requested) / input_data.claim_amount_requested
+                    if diff > 0.05:
+                        warnings.append("AMOUNT_DISCREPANCY")
+                        
+                # Post conditions checks on extracted data to ensure they conform
+                if extracted.get("primary_diagnosis_icd10") and not re.match(r"^[A-Z]\d{2}(\.\d{1,4})?$", extracted.get("primary_diagnosis_icd10")):
+                     warnings.append("INVALID_ICD10_FORMAT")
+                     
+                doc_summary = DocumentSummary(
+                    total_billed_amount=extracted.get("total_billed_amount"),
+                    itemised_charges=extracted.get("itemised_charges", []),
+                    primary_diagnosis_icd10=extracted.get("primary_diagnosis_icd10"),
+                    procedure_cpt_codes=extracted.get("procedure_cpt_codes", []),
+                    symptom_onset_date=extracted.get("symptom_onset_date"),
+                    admission_date=extracted.get("admission_date"),
+                    discharge_date=extracted.get("discharge_date"),
+                    attending_physician=extracted.get("attending_physician"),
+                    physician_license_no=extracted.get("physician_license_no"),
+                    pre_authorisation_no=extracted.get("pre_authorisation_no"),
+                    provider_name_on_bill=extracted.get("provider_name_on_bill"),
+                    extraction_warnings=warnings,
+                    summary_narrative=extracted.get("summary_narrative")
+                )
+        except Exception as e:
+            import logging
+            logging.error(f"document parse failure: {e}", exc_info=True)
             rejection_reason = "DOCUMENT_PARSE_FAILURE"
-        else:
-            # Check amount discrepancy
-            billed = extracted.get("total_billed_amount")
-            if billed and billed > 0:
-                diff = abs(billed - input_data.claim_amount_requested) / input_data.claim_amount_requested
-                if diff > 0.05:
-                    warnings.append("AMOUNT_DISCREPANCY")
-                    
-            # Post conditions checks on extracted data to ensure they conform
-            if extracted.get("primary_diagnosis_icd10") and not re.match(r"^[A-Z]\d{2}(\.\d{1,4})?$", extracted.get("primary_diagnosis_icd10")):
-                 warnings.append("INVALID_ICD10_FORMAT")
-                 
-            doc_summary = DocumentSummary(
-                total_billed_amount=extracted.get("total_billed_amount"),
-                itemised_charges=extracted.get("itemised_charges", []),
-                primary_diagnosis_icd10=extracted.get("primary_diagnosis_icd10"),
-                procedure_cpt_codes=extracted.get("procedure_cpt_codes", []),
-                symptom_onset_date=extracted.get("symptom_onset_date"),
-                admission_date=extracted.get("admission_date"),
-                discharge_date=extracted.get("discharge_date"),
-                attending_physician=extracted.get("attending_physician"),
-                physician_license_no=extracted.get("physician_license_no"),
-                pre_authorisation_no=extracted.get("pre_authorisation_no"),
-                provider_name_on_bill=extracted.get("provider_name_on_bill"),
-                extraction_warnings=warnings,
-                summary_narrative=extracted.get("summary_narrative")
+            return ClaimIntakeOutput(
+                claim_reference_draft="",
+                policy_no=input_data.policy_no,
+                claimant_name=input_data.claimant_name,
+                id_document_type=input_data.id_document_type,
+                id_document_no=input_data.id_document_no,
+                date_of_birth=input_data.date_of_birth,
+                claimant_relationship=input_data.claimant_relationship,
+                claim_type=input_data.claim_type,
+                incident_date=input_data.incident_date,
+                claim_date=input_data.claim_date,
+                claim_amount_requested=input_data.claim_amount_requested,
+                provider_name=input_data.provider_name,
+                provider_registration=input_data.provider_registration,
+                intake_accepted=False,
+                rejection_reason=rejection_reason,
+                missing_documents=missing_documents,
+                intake_timestamp=get_server_timestamp(),
+                document_summary=None,
+                _debug_error=str(e)
             )
 
     # Final Draft Generation

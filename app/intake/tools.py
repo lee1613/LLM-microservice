@@ -94,57 +94,45 @@ Return raw JSON ONLY after you have gathered the data.
 
     messages = [{"role": "user", "content": prompt}]
     
-    try:
-        response = client.chat.completions.create(
+    response = client.chat.completions.create(
+        model="nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        messages=messages,
+        tools=tools,
+        tool_choice="auto"
+    )
+    
+    response_message = response.choices[0].message
+    
+    # If the model decides to call tools
+    while response_message.tool_calls:
+        messages.append(response_message)
+        for tool_call in response_message.tool_calls:
+            if tool_call.function.name == "parse_pdf_file":
+                args = json.loads(tool_call.function.arguments)
+                text_result = parse_pdf_file_tool(args["filepath"])
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": "parse_pdf_file",
+                    "content": text_result
+                })
+        
+        # Send the tool results back to the model
+        from app.core.llm_utils import call_llm_with_json_retry
+        response_message = call_llm_with_json_retry(
+            client=client,
             model="nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
             messages=messages,
             tools=tools,
             tool_choice="auto"
         )
-        
-        response_message = response.choices[0].message
-        
-        # If the model decides to call tools
-        while response_message.tool_calls:
-            messages.append(response_message)
-            for tool_call in response_message.tool_calls:
-                if tool_call.function.name == "parse_pdf_file":
-                    args = json.loads(tool_call.function.arguments)
-                    text_result = parse_pdf_file_tool(args["filepath"])
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tool_call.id,
-                        "name": "parse_pdf_file",
-                        "content": text_result
-                    })
-            
-            # Send the tool results back to the model
-            response = client.chat.completions.create(
-                model="nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
-                messages=messages,
-                tools=tools,
-                tool_choice="auto"
-            )
-            response_message = response.choices[0].message
+        if isinstance(response_message, dict):
+            return response_message # It successfully parsed json
+        # Otherwise, loop continues if it called tools again
 
-        content = response_message.content
-        
-        # Remove <think>...</think> tags if any
-        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
-        # Remove any markdown json wrappers
-        if content.startswith('```json'):
-            content = content[7:]
-        if content.startswith('```'):
-            content = content[3:]
-        
-        with open("b002_llm_output.json", "w", encoding="utf-8") as f:
-            f.write(content)
-            
-        return json.loads(content.strip())
-    except Exception as e:
-        # Just return fallback dict on error
-        return {
-            "total_billed_amount": None,
-            "primary_diagnosis_icd10": None,
-            "extraction_warnings": ["total_billed_amount", "primary_diagnosis_icd10"]
-        }
+    from app.core.llm_utils import call_llm_with_json_retry
+    return call_llm_with_json_retry(
+        client=client,
+        model="nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
+        messages=messages
+    )

@@ -5,6 +5,7 @@ from app.eligibility import router as eligibility
 from app.medical import router as medical
 from app.adjudication import router as adjudication
 from app.disbursement import router as disbursement
+from app.dev import router as dev
 
 app = FastAPI(
     title="Health Insurance Claims Pipeline",
@@ -18,6 +19,7 @@ app.include_router(eligibility.router)
 app.include_router(medical.router)
 app.include_router(adjudication.router)
 app.include_router(disbursement.router)
+app.include_router(dev)
 
 @app.get("/")
 async def root():

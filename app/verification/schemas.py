@@ -28,6 +28,10 @@ class PolicyVerificationOutput(BaseModel):
     claim_reference_draft: str
     policy_no: str
     claimant_name: str
+    id_document_type: IdDocumentType
+    id_document_no: str
+    date_of_birth: date
+    claimant_relationship: ClaimantRelationship
     claim_type: ClaimType
     incident_date: date
     claim_amount_requested: float

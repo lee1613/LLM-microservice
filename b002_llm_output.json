@@ -1,44 +1,45 @@
 {
-  "total_billed_amount": 18500.0,
+  "total_billed_amount": 380.0,
   "itemised_charges": [
     {
-      "description": "Ward Charges (Class B2 - 4 Nights)",
-      "quantity": 4,
-      "unit_price": 1200.0
-    },
-    {
-      "description": "Physician Consultation (Dr. Chong WL)",
-      "quantity": 4,
-      "unit_price": 250.0
-    },
-    {
-      "description": "Chest X-Ray (2 views)",
+      "description": "GP Consultation Fee",
       "quantity": 1,
-      "unit_price": 120.0
+      "unit_price": 85.0
     },
     {
-      "description": "IV Amoxicillin-Clavulanate (5 days)",
-      "quantity": 4,
-      "unit_price": 210.0
-    },
-    {
-      "description": "Nursing Procedures & Consumables",
+      "description": "Blood Pressure Monitoring & ECG",
       "quantity": 1,
-      "unit_price": 11740.0
+      "unit_price": 60.0
+    },
+    {
+      "description": "Basic Metabolic Panel (Blood Test)",
+      "quantity": 1,
+      "unit_price": 45.0
+    },
+    {
+      "description": "Amlodipine 5mg",
+      "quantity": 1,
+      "unit_price": 90.0
+    },
+    {
+      "description": "Perindopril 4mg",
+      "quantity": 1,
+      "unit_price": 100.0
     }
   ],
-  "primary_diagnosis_icd10": "J18.9",
+  "primary_diagnosis_icd10": "I10",
   "procedure_cpt_codes": [
-    "71046",
-    "99232"
+    "99213",
+    "93000",
+    "80048"
   ],
-  "symptom_onset_date": "2025-04-07",
-  "admission_date": "2025-04-10",
-  "discharge_date": "2025-04-14",
-  "attending_physician": "Dr. Chong Wei Liang",
-  "physician_license_no": "MCR-10234A",
-  "pre_authorisation_no": "PA-2025-110001",
-  "provider_name_on_bill": "Singapore General Hospital",
+  "symptom_onset_date": null,
+  "admission_date": null,
+  "discharge_date": null,
+  "attending_physician": "Dr. Farhan Bin Riza",
+  "physician_license_no": "MCR-67890F",
+  "pre_authorisation_no": null,
+  "provider_name_on_bill": "CityMed Family Clinic",
   "extraction_warnings": [],
-  "summary_narrative": "Tan Wei Ming was admitted on 10 April 2025 with community‑acquired pneumonia (J18.9) and treated in Bunga Mas 6 ward with IV antibiotics, chest X‑ray, daily physician visits, oxygen therapy and nursing care, resulting in a total bill of SGD 18,500.00."
+  "summary_narrative": "On 20 April 2025, Lim Kai Xuan visited CityMed Family Clinic for an outpatient consultation. The attending physician diagnosed hypertension and prescribed a 30‑day supply of Amlodipine 5 mg and Perindopril 4 mg. Services included a GP consultation (CPT 99213), blood pressure monitoring with ECG (CPT 93000), and a basic metabolic panel (CPT 80048). The total billed amount was SGD 380.00."
 }

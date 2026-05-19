@@ -1,0 +1,90 @@
+
+==================================================
+Testing claim_B001_full_pipeline.json
+==================================================
+--- Stage 1: Intake ---
+Differences found in N1:
+  - document_summary.itemised_charges[0].description: expected Ward charges (4 nights, Class B2) (str), got Ward Charges (Class B2 - 4 Nights) (str)
+  - document_summary.itemised_charges[1].description: expected Physician consultation (Dr. Chong Wei Liang) (str), got Physician Consultation (Dr. Chong WL) (str)
+  - document_summary.itemised_charges[2].description: expected Chest X-ray (2 views) (str), got Chest X-Ray (2 views) (str)
+  - document_summary.itemised_charges[3].description: expected IV antibiotics (Amoxicillin-clavulanate) (str), got IV Amoxicillin-Clavulanate (str)
+  - document_summary.itemised_charges[4].description: expected Nursing procedures and consumables (str), got Nursing Procedures & Consumables (str)
+  - document_summary.itemised_charges[4].unit_price: expected 13580.0 (float), got 11740.0 (float)
+  - document_summary.procedure_cpt_codes[0]: expected 99232 (str), got 71046 (str)
+  - document_summary.procedure_cpt_codes[1]: expected 71046 (str), got 99232 (str)
+--- Stage 2: Verification ---
+Differences found in N2:
+  - document_summary.itemised_charges[0].description: expected Ward charges (4 nights, Class B2) (str), got Ward Charges (Class B2 - 4 Nights) (str)
+  - document_summary.itemised_charges[1].description: expected Physician consultation (Dr. Chong Wei Liang) (str), got Physician Consultation (Dr. Chong WL) (str)
+  - document_summary.itemised_charges[2].description: expected Chest X-ray (2 views) (str), got Chest X-Ray (2 views) (str)
+  - document_summary.itemised_charges[3].description: expected IV antibiotics (Amoxicillin-clavulanate) (str), got IV Amoxicillin-Clavulanate (str)
+  - document_summary.itemised_charges[4].description: expected Nursing procedures and consumables (str), got Nursing Procedures & Consumables (str)
+  - document_summary.itemised_charges[4].unit_price: expected 13580.0 (float), got 11740.0 (float)
+  - document_summary.procedure_cpt_codes[0]: expected 99232 (str), got 71046 (str)
+  - document_summary.procedure_cpt_codes[1]: expected 71046 (str), got 99232 (str)
+--- Stage 3: Eligibility ---
+Differences found in N3:
+  - document_summary.itemised_charges[0].description: expected Ward charges (4 nights, Class B2) (str), got Ward Charges (Class B2 - 4 Nights) (str)
+  - document_summary.itemised_charges[1].description: expected Physician consultation (Dr. Chong Wei Liang) (str), got Physician Consultation (Dr. Chong WL) (str)
+  - document_summary.itemised_charges[2].description: expected Chest X-ray (2 views) (str), got Chest X-Ray (2 views) (str)
+  - document_summary.itemised_charges[3].description: expected IV antibiotics (Amoxicillin-clavulanate) (str), got IV Amoxicillin-Clavulanate (str)
+  - document_summary.itemised_charges[4].description: expected Nursing procedures and consumables (str), got Nursing Procedures & Consumables (str)
+  - document_summary.itemised_charges[4].unit_price: expected 13580.0 (float), got 11740.0 (float)
+  - document_summary.procedure_cpt_codes[0]: expected 99232 (str), got 71046 (str)
+  - document_summary.procedure_cpt_codes[1]: expected 71046 (str), got 99232 (str)
+--- Stage 4: Medical Review ---
+Differences found in N4:
+  - document_summary.itemised_charges[0].description: expected Ward charges (4 nights, Class B2) (str), got Ward Charges (Class B2 - 4 Nights) (str)
+  - document_summary.itemised_charges[1].description: expected Physician consultation (Dr. Chong Wei Liang) (str), got Physician Consultation (Dr. Chong WL) (str)
+  - document_summary.itemised_charges[2].description: expected Chest X-ray (2 views) (str), got Chest X-Ray (2 views) (str)
+  - document_summary.itemised_charges[3].description: expected IV antibiotics (Amoxicillin-clavulanate) (str), got IV Amoxicillin-Clavulanate (str)
+  - document_summary.itemised_charges[4].description: expected Nursing procedures and consumables (str), got Nursing Procedures & Consumables (str)
+  - document_summary.itemised_charges[4].unit_price: expected 13580.0 (float), got 11740.0 (float)
+  - document_summary.procedure_cpt_codes[0]: expected 99232 (str), got 71046 (str)
+  - document_summary.procedure_cpt_codes[1]: expected 71046 (str), got 99232 (str)
+  - coding_assessment[0].cpt_code: expected 99232 (str), got 71046 (str)
+  - coding_assessment[1].cpt_code: expected 71046 (str), got 99232 (str)
+--- Stage 5: Adjudication ---
+N5 Match!
+--- Stage 6: Disbursement ---
+Differences found in N6:
+  - payee_name: expected Tan Wei Ming (****4567) (str), got Tan Wei Ming (DBS Bank ******9123) (str)
+  - disbursement_date: expected 2025-04-17 (str), got 2026-05-22 (str)
+  - processing_timestamp: expected 2025-04-14T09:26:45+08:00 (str), got 2026-05-19T08:11:54.324342Z (str)
+
+==================================================
+Testing claim_B002_full_pipeline.json
+==================================================
+--- Stage 1: Intake ---
+Differences found in N1:
+  - document_summary.itemised_charges: expected length 4, got 5
+--- Stage 2: Verification ---
+Differences found in N2:
+  - document_summary.itemised_charges: expected length 4, got 5
+--- Stage 3: Eligibility ---
+Differences found in N3:
+  - document_summary.itemised_charges: expected length 4, got 5
+--- Stage 4: Medical Review ---
+Traceback (most recent call last):
+  File "/Users/june/Desktop/Project/LLM-microservice/.venv/lib/python3.12/site-packages/requests/models.py", line 1116, in json
+    return complexjson.loads(self.text, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/june/.gemini/antigravity/brain/e2aeb180-5135-4e50-a0e2-dfb42ff437a3/scratch/test_synthetic.py", line 106, in <module>
+    n4 = requests.post(f"{BASE_URL}/medical/process", headers=headers, json=n3).json()
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/june/Desktop/Project/LLM-microservice/.venv/lib/python3.12/site-packages/requests/models.py", line 1120, in json
+    raise RequestsJSONDecodeError(e.msg, e.doc, e.pos)
+requests.exceptions.JSONDecodeError: Expecting value: line 1 column 1 (char 0)

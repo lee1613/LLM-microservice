@@ -124,17 +124,12 @@ Return ONLY valid JSON (no markdown, no code fences):
 """
 
     try:
-        response = client.chat.completions.create(
+        from app.core.llm_utils import call_llm_with_json_retry
+        return call_llm_with_json_retry(
+            client=client,
             model="nvidia/DeepSeek-V3.2-NVFP4",
             messages=[{"role": "user", "content": prompt}]
         )
-        content = response.choices[0].message.content
-        # Strip <think> blocks
-        content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
-        # Strip markdown fences
-        content = re.sub(r'^```(?:json)?', '', content.strip(), flags=re.MULTILINE).strip()
-        content = re.sub(r'```$', '', content.strip(), flags=re.MULTILINE).strip()
-        return json.loads(content.strip())
     except Exception as e:
         raise RuntimeError(f"LLM eligibility judgment failed: {e}")
 
