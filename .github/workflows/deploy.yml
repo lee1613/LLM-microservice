@@ -77,8 +77,6 @@ jobs:
   build-push:
     needs: integration-test
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.meta.outputs.sha_tag }}
     steps:
       - uses: actions/checkout@v4
 
@@ -89,16 +87,12 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Set image tag
-        id: meta
-        run: echo "sha_tag=${{ secrets.DOCKERHUB_USERNAME }}/llm-microservice:${{ github.sha }}" >> $GITHUB_OUTPUT
-
       - uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ${{ steps.meta.outputs.sha_tag }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/llm-microservice:${{ github.sha }}
             ${{ secrets.DOCKERHUB_USERNAME }}/llm-microservice:latest
 
   # ── Stage 4: Kubernetes Deploy ───────────────────────────────────────────────
@@ -118,10 +112,6 @@ jobs:
           mkdir -p $HOME/.kube
           printf '%s' "$KUBECONFIG_YAML" > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-
-      - name: Update image tag in deployment
-        run: |
-          sed -i "s|lee1613/llm-microservice:.*|${{ needs.build-push.outputs.image_tag }}|" k8s/deployment.yaml
 
       - name: Apply deployment
         run: kubectl apply -f k8s/deployment.yaml
