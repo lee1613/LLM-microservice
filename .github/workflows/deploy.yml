@@ -114,7 +114,7 @@ jobs:
       - name: Configure kubeconfig
         run: |
           mkdir -p $HOME/.kube
-          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          echo "${{ secrets.KUBECONFIG_B64 }}" | tr -d '\r\n' | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       - name: Update image tag in deployment
