@@ -6,7 +6,8 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      - .env
+      - path: .env
+        required: false
     environment:
       - VULTR_SERVERLESS_INFERENCE_API_KEY=${VULTR_SERVERLESS_INFERENCE_API_KEY:-}
     restart: unless-stopped
