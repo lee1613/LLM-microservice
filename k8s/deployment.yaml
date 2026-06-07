@@ -1,12 +1,7 @@
----
-# ── Secret: VULTR API key ─────────────────────────────────────────────────────
-apiVersion: v1
-kind: Secret
-metadata:
-  name: llm-secrets
-type: Opaque
-stringData:
-  VULTR_SERVERLESS_INFERENCE_API_KEY: "2H2WJ4OVXWU4RJN3IYQAFSMOXR2O5O2HRBQA"
+# ── Secret: apply separately, never commit key values ─────────────────────────
+# kubectl create secret generic llm-secrets \
+#   --from-literal=VULTR_SERVERLESS_INFERENCE_API_KEY=<your-key> \
+#   --dry-run=client -o yaml | kubectl apply -f -
 ---
 # ── Deployment ────────────────────────────────────────────────────────────────
 apiVersion: apps/v1

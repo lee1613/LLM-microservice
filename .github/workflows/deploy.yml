@@ -1,0 +1,128 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [personal]
+  workflow_dispatch:
+
+jobs:
+  # ── Stage 1: Lint ────────────────────────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - run: pip install ruff
+      - run: ruff check app/
+
+  # ── Stage 2: Integration Test ────────────────────────────────────────────────
+  integration-test:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and start service
+        env:
+          VULTR_SERVERLESS_INFERENCE_API_KEY: ${{ secrets.VULTR_SERVERLESS_INFERENCE_API_KEY }}
+        run: docker compose up --build -d
+
+      - name: Wait for /health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/health; then
+              echo "Service is up"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 5
+          done
+
+      - name: Reset DB
+        run: curl -sf -X POST http://localhost:8000/dev/reset
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install test dependencies
+        run: pip install requests
+
+      - name: Run QC B001
+        env:
+          BASE_URL: http://localhost:8000
+        run: python test/qc_pipeline_b001.py
+
+      - name: Check QC report for failures
+        run: |
+          if grep -q "| FAIL |" test/qc_report_b001.md; then
+            echo "QC failures found:"
+            grep "| FAIL |" test/qc_report_b001.md
+            exit 1
+          fi
+          echo "All QC checks passed"
+
+      - name: Upload QC report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qc-report-b001
+          path: test/qc_report_b001.md
+
+  # ── Stage 3: Docker Build & Push ─────────────────────────────────────────────
+  build-push:
+    needs: integration-test
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.meta.outputs.sha_tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set image tag
+        id: meta
+        run: echo "sha_tag=${{ secrets.DOCKERHUB_USERNAME }}/llm-microservice:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.sha_tag }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/llm-microservice:latest
+
+  # ── Stage 4: Kubernetes Deploy ───────────────────────────────────────────────
+  deploy:
+    needs: build-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Update image tag in deployment
+        run: |
+          sed -i "s|lee1613/llm-microservice:.*|${{ needs.build-push.outputs.image_tag }}|" k8s/deployment.yaml
+
+      - name: Apply deployment
+        run: kubectl apply -f k8s/deployment.yaml
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/llm-microservice --timeout=120s
