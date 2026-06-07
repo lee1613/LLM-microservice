@@ -25,8 +25,8 @@ sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="repla
 
 # ── Config ────────────────────────────────────────────────────────────────────
 BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
-EXPECTED_FILE = Path(r"data\health-insurance-claim\synthetic data\claim_B005_full_pipeline.json")
-DOCS_DIR = Path(r"data\health-insurance-claim\synthetic data\documents")
+EXPECTED_FILE = Path("data/health-insurance-claim/synthetic data/claim_B005_full_pipeline.json")
+DOCS_DIR = Path("data/health-insurance-claim/synthetic data/documents")
 REPORT_FILE = Path("qc_report_b005.md")
 HEADERS = {"Content-Type": "application/json"}
 TIMEOUT = 90
