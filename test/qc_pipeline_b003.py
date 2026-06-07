@@ -24,7 +24,7 @@ sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="repla
 sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-BASE_URL = os.environ.get("BASE_URL", "http://localhost:8000")
+BASE_URL = os.environ.get("BASE_URL", "http://149.28.144.51")
 EXPECTED_FILE = Path("data/health-insurance-claim/synthetic data/claim_B003_full_pipeline.json")
 DOCS_DIR = Path("data/health-insurance-claim/synthetic data/documents")
 REPORT_FILE = Path("qc_report_b003.md")
