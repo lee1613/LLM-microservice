@@ -1,6 +1,4 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import ValidationError
-import json
 
 from app.verification.schemas import PolicyVerificationInput, PolicyVerificationOutput
 from app.verification.agent import process_verification

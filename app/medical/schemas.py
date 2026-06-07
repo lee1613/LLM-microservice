@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, datetime
 from app.intake.schemas import DocumentSummary, ClaimType
-from app.eligibility.schemas import EligibilityCheckOutput
 
 class CptCodeAssessment(BaseModel):
     cpt_code: str

@@ -58,7 +58,6 @@ def process_disbursement(input_data: DisbursementInput) -> DisbursementOutput:
     # ── Step 1: Payment channel validation ────────────────────────────────────
     resolved_bank_account = pd.bank_account_no  # may be overridden for provider_direct
     resolved_bank_name    = pd.bank_name
-    resolved_payee_name   = pd.payee_name
     provider_registered_name = None
 
     if mode in (PaymentMode.direct_credit, PaymentMode.giro):
@@ -87,16 +86,13 @@ def process_disbursement(input_data: DisbursementInput) -> DisbursementOutput:
         provider_registered_name = provider_rec['provider_name']
 
     # ── Step 2: Anti-fraud payee cross-check ──────────────────────────────────
-    disbursement_status = DisbursementStatus.disbursed
     fraud_flag = False
 
     if mode in (PaymentMode.direct_credit, PaymentMode.giro, PaymentMode.cheque):
         if _normalise(pd.payee_name) != _normalise(input_data.claimant_name):
-            disbursement_status = DisbursementStatus.pending_manual_review
             fraud_flag = True
     elif mode == PaymentMode.provider_direct and provider_registered_name:
         if _normalise(pd.payee_name) != _normalise(provider_registered_name):
-            disbursement_status = DisbursementStatus.pending_manual_review
             fraud_flag = True
 
     if fraud_flag:

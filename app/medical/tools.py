@@ -9,7 +9,6 @@ Node 4 tools — four distinct tool groups:
 import sqlite3
 import os
 import requests
-from datetime import date
 from typing import Optional, Dict, Any, List
 
 REGISTRY_DB = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'registry.db')

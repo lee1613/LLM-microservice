@@ -7,7 +7,6 @@ Architecture per contract:
   Step 5: LLM produces adjudication_notes (≤80 words)
 """
 import re
-import json
 import os
 from datetime import datetime, timezone
 from openai import OpenAI

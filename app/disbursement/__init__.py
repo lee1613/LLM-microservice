@@ -1,2 +1,2 @@
 # disbursement package
-from app.disbursement import router
+from app.disbursement import router as router

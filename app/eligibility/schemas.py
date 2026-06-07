@@ -3,7 +3,6 @@ from typing import Optional, List
 from datetime import date, datetime
 from enum import Enum
 from app.intake.schemas import DocumentSummary, ClaimType
-from app.verification.schemas import PremiumPaymentMode
 
 class WaitingPeriodBasis(str, Enum):
     symptom_onset = "symptom_onset"

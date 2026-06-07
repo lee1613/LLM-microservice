@@ -1,7 +1,6 @@
-import re
 import json
 import os
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone, date
 from openai import OpenAI
 from dotenv import load_dotenv
 

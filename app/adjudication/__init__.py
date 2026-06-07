@@ -1,2 +1,2 @@
 # adjudication package
-from app.adjudication import router
+from app.adjudication import router as router

@@ -1,12 +1,11 @@
 import re
-import json
 import os
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone
 from openai import OpenAI
 from dotenv import load_dotenv
 
 from app.eligibility.schemas import (
-    EligibilityCheckInput, EligibilityCheckOutput, WaitingPeriodBasis, ClaimType
+    EligibilityCheckInput, EligibilityCheckOutput, WaitingPeriodBasis
 )
 from app.eligibility.tools import get_plan_document, get_annual_utilised, get_lifetime_utilised
 
@@ -27,8 +26,8 @@ WAITING_PERIOD_TABLE = {
 def check_exclusions(icd10: str) -> list[str]:
     triggered = []
     code = icd10.upper()
-    prefix2 = code[:3]
-    prefix1 = code[:1]
+    code[:3]
+    code[:1]
     # Z41.x — Cosmetic
     if re.match(r'^Z41', code):
         triggered.append("COSMETIC_PROCEDURE")
@@ -205,7 +204,7 @@ def process_eligibility(input_data: EligibilityCheckInput) -> EligibilityCheckOu
 
     annual_limit = float(llm_result.get("annual_limit", 0))
     per_claim_limit = float(llm_result.get("per_claim_limit", 0))
-    lifetime_limit = float(llm_result.get("lifetime_limit", 0))
+    float(llm_result.get("lifetime_limit", 0))
     annual_limit_remaining = max(0.0, annual_limit - annual_utilised)
     claimable_ceiling = min(input_data.claim_amount_requested, per_claim_limit, annual_limit_remaining) if annual_limit_remaining > 0 else 0.0
 

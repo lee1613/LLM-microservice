@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import List
 from datetime import date, datetime
 from enum import Enum
 from app.intake.schemas import ClaimType

@@ -1,9 +1,8 @@
-import re
 import os
 import sqlite3
 import fitz
 import json
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone, timedelta
 from openai import OpenAI
 from dotenv import load_dotenv
 

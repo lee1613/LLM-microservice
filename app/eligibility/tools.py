@@ -1,7 +1,6 @@
 import sqlite3
 import os
-from datetime import date
-from typing import Optional, Dict, Any
+from typing import Optional
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
 

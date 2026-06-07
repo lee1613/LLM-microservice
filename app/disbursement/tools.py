@@ -2,7 +2,6 @@ import sqlite3
 import re
 import os
 from typing import Optional, Dict, Any
-from datetime import date
 
 DB_PATH       = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
 REGISTRY_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'registry.db')
