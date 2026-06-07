@@ -113,10 +113,10 @@ jobs:
 
       - name: Configure kubeconfig
         env:
-          KUBECONFIG_DATA: ${{ secrets.KUBECONFIG_B64 }}
+          KUBECONFIG_YAML: ${{ secrets.KUBECONFIG_YAML }}
         run: |
           mkdir -p $HOME/.kube
-          printf '%s' "$KUBECONFIG_DATA" | base64 -d > $HOME/.kube/config
+          printf '%s' "$KUBECONFIG_YAML" > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
       - name: Update image tag in deployment
