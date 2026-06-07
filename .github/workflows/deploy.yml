@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [personal]
+    branches: [personal, demo]
   workflow_dispatch:
 
 jobs:
