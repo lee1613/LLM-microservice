@@ -59,9 +59,9 @@ jobs:
 
       - name: Check QC report for failures
         run: |
-          if grep -q "| FAIL |" test/qc_report_b001.md; then
+          if grep -qE "^\| FAIL \|" test/qc_report_b001.md; then
             echo "QC failures found:"
-            grep "| FAIL |" test/qc_report_b001.md
+            grep -E "^\| FAIL \|" test/qc_report_b001.md
             exit 1
           fi
           echo "All QC checks passed"
