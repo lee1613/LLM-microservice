@@ -295,15 +295,15 @@ kubectl get service llm-microservice-svc
 
 ```
 NAME                   TYPE           CLUSTER-IP      EXTERNAL-IP       PORT(S)
-llm-microservice-svc   LoadBalancer   10.101.75.178   139.180.136.212   80:30499/TCP
+llm-microservice-svc   LoadBalancer   10.101.75.178   149.28.144.51   80:30499/TCP
 ```
 
-The `EXTERNAL-IP` (`139.180.136.212`) is the public IP provisioned by Vultr's load balancer. This is your live API endpoint.
+The `EXTERNAL-IP` (`149.28.144.51`) is the public IP provisioned by Vultr's load balancer. This is your live API endpoint.
 
 ### 6.4 Smoke test
 
 ```bash
-curl http://139.180.136.212/health
+curl http://149.28.144.51/health
 # → {"status": "healthy", "service": "llm-microservice"}
 ```
 

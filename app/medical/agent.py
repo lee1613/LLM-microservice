@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timezone, date
 from openai import OpenAI
 from dotenv import load_dotenv
+from app.core.llm_utils import call_llm_raw_with_retry
 
 from app.medical.schemas import (
     MedicalReviewInput, MedicalReviewOutput, CptCodeAssessment, ClaimType
@@ -254,7 +255,8 @@ Gather evidence using tools, then return the JSON verdict."""
     ]
 
     # Agentic tool-calling loop
-    response = client.chat.completions.create(
+    response = call_llm_raw_with_retry(
+        client,
         model="nvidia/DeepSeek-V3.2-NVFP4",
         messages=messages,
         tools=TOOLS,

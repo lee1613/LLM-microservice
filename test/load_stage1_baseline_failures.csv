@@ -1,0 +1,2 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,node3_eligibility,HTTPError('500 Server Error: Internal Server Error for url: node3_eligibility'),4,2026-06-08T08:06:31Z,2026-06-08T08:07:27Z

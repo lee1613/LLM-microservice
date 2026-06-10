@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 
 from app.adjudication.schemas import AdjudicationInput, AdjudicationOutput, AdjudicationStatus
 from app.adjudication.tools import get_plan_document, get_deductible_utilised, record_adjudicated_claim
+from app.core.llm_utils import call_llm_raw_with_retry
 
 load_dotenv()
 client = OpenAI(
@@ -133,7 +134,8 @@ Rules:
 - Reference any medical_flags that affected the calculation.
 - Return ONLY the plain text of the note (no JSON, no code blocks, no headers).
 """
-    response = client.chat.completions.create(
+    response = call_llm_raw_with_retry(
+        client,
         model="nvidia/DeepSeek-V3.2-NVFP4",
         messages=[{"role": "user", "content": prompt}]
     )

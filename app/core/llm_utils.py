@@ -1,7 +1,35 @@
 import json
 import re
+import time
 from typing import Any, Dict, List, Optional
 from openai import OpenAI
+
+def call_llm_raw_with_retry(
+    client: OpenAI,
+    max_retries: int = 3,
+    **kwargs: Any,
+):
+    """
+    Thin retry wrapper around client.chat.completions.create().
+    Returns the raw response object. Use when the caller needs tool_calls
+    or plain-text content (not JSON), so call_llm_with_json_retry is not applicable.
+    """
+    for attempt in range(max_retries):
+        try:
+            t0 = time.perf_counter()
+            response = client.chat.completions.create(**kwargs)
+            ms = round((time.perf_counter() - t0) * 1000)
+            model = kwargs.get("model", "unknown")
+            print(json.dumps({"type": "llm_call", "model": model, "attempt": attempt + 1, "latency_ms": ms}), flush=True)
+            return response
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise
+            backoff = 2 ** attempt
+            model = kwargs.get("model", "unknown")
+            print(json.dumps({"type": "llm_retry", "model": model, "attempt": attempt + 1, "backoff_s": backoff, "error": str(e)[:120]}), flush=True)
+            time.sleep(backoff)
+
 
 def call_llm_with_json_retry(
     client: OpenAI,
@@ -31,7 +59,10 @@ def call_llm_with_json_retry(
             if tool_choice:
                 kwargs["tool_choice"] = tool_choice
                 
+            t0 = time.perf_counter()
             response = client.chat.completions.create(**kwargs)
+            ms = round((time.perf_counter() - t0) * 1000)
+            print(json.dumps({"type": "llm_call", "model": model, "attempt": attempt + 1, "latency_ms": ms}), flush=True)
             response_message = response.choices[0].message
             content = response_message.content or ""
             
@@ -68,7 +99,10 @@ def call_llm_with_json_retry(
         except Exception as e:
             if attempt == max_retries - 1:
                 raise RuntimeError(f"LLM call failed after {max_retries} attempts. Last error: {e}")
-            
+            # Exponential backoff for transient upstream errors (Vultr 500s, rate limits)
+            backoff = 2 ** attempt  # 1s, 2s, 4s
+            print(json.dumps({"type": "llm_retry", "attempt": attempt + 1, "backoff_s": backoff, "error": str(e)[:120]}), flush=True)
+            time.sleep(backoff)
             current_messages.append({
                 "role": "user",
                 "content": f"An error occurred: {e}. Please try again."

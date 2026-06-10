@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+import json
+import time
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from app.intake import router as intake
@@ -23,6 +25,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def latency_logger(request: Request, call_next):
+    t0 = time.perf_counter()
+    response = await call_next(request)
+    ms = round((time.perf_counter() - t0) * 1000)
+    print(json.dumps({"path": request.url.path, "status": response.status_code, "latency_ms": ms}), flush=True)
+    return response
 
 app.include_router(intake.router)
 app.include_router(verification.router)

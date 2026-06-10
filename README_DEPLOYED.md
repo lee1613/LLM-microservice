@@ -1,7 +1,7 @@
 # Deployed API Usage Guidelines
 
 The Health Insurance Claims pipeline is deployed at:  
-👉 **`http://139.180.136.212`**
+👉 **`http://149.28.144.51`**
 
 ---
 
@@ -25,13 +25,13 @@ Use python/curl to trigger the pipeline sequentially with the synthetic dataset 
 
 ### 1. Reset the Ledger (Recommended before testing)
 ```bash
-curl -X POST http://139.180.136.212/dev/reset
+curl -X POST http://149.28.144.51/dev/reset
 ```
 
 ### 2. Run Intake (Node 1)
 Pass the `_input` block from `claim_B001_full_pipeline.json`:
 ```bash
-curl -X POST http://139.180.136.212/intake/process \
+curl -X POST http://149.28.144.51/intake/process \
      -H "Content-Type: application/json" \
      -d '{
        "policy_no": "HIC-2024-00123",

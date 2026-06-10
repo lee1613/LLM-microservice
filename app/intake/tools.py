@@ -5,6 +5,7 @@ import json
 from datetime import datetime, timezone, timedelta
 from openai import OpenAI
 from dotenv import load_dotenv
+from app.core.llm_utils import call_llm_raw_with_retry
 
 load_dotenv()
 
@@ -107,7 +108,8 @@ Return raw JSON ONLY after you have gathered the data.
 
     messages = [{"role": "user", "content": prompt}]
     
-    response = client.chat.completions.create(
+    response = call_llm_raw_with_retry(
+        client,
         model="nvidia/Nemotron-3-Nano-Omni-30B-A3B-Reasoning-BF16",
         messages=messages,
         tools=tools,
