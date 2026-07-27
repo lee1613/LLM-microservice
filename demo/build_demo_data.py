@@ -187,7 +187,25 @@ def _self_check(data):
     print(f"OK: {len(data)} scenarios distilled, all money-path asserts passed.")
 
 
+INDEX_HTML = os.path.join(HERE, "index.html")
+_MARK_OPEN = '<script id="demo-data" type="application/json">'
+_MARK_CLOSE = "</script>"
+
+
+def inject(data):
+    """Rewrite the <script id="demo-data"> region of index.html in place."""
+    with open(INDEX_HTML, encoding="utf-8") as fh:
+        html = fh.read()
+    start = html.index(_MARK_OPEN) + len(_MARK_OPEN)
+    end = html.index(_MARK_CLOSE, start)
+    payload = "\n" + json.dumps(data, ensure_ascii=False, indent=0) + "\n"
+    new_html = html[:start] + payload + html[end:]
+    with open(INDEX_HTML, "w", encoding="utf-8") as fh:
+        fh.write(new_html)
+    print(f"Injected {len(data)} scenarios into {INDEX_HTML}")
+
+
 if __name__ == "__main__":
     data = build_all()
     _self_check(data)
-    print(json.dumps(data, indent=2, ensure_ascii=False))
+    inject(data)

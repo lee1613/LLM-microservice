@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoClaim AI — Demo</title>
+</head>
+<body>
+<script id="demo-data" type="application/json">
+[
+{
+"id": "B001",
+"title": "B001 — Hospitalisation (Community-Acquired Pneumonia, 4 days), COMP-HEALTH-GOLD, Self, FULLY APPROVED",
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
+"verdict": "Claim parsed: pneumonia hospitalisation",
+"keyNumbers": "GOLD plan · policy HIC-2025-…1101"
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates"
+},
+{
+"name": "Eligibility",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "Eligible — within annual & lifetime limits",
+"keyNumbers": "No waiting-period breach"
+},
+{
+"name": "Medical",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "Codes valid, provider & physician accredited",
+"keyNumbers": "ICD/CPT verified · panel provider"
+},
+{
+"name": "Adjudication",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "Adjudicated — full cost-share applied",
+"keyNumbers": "Net payable SGD 14,962.50"
+},
+{
+"name": "Disbursement",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "Disbursed via direct credit (DBS), T+3",
+"keyNumbers": "SGD 14,962.50 · ref CLM-2025-0001101"
+}
+],
+"final": {
+"status": "APPROVED",
+"amount": 14962.5
+}
+},
+{
+"id": "B002",
+"title": "B002 — Outpatient (Essential Hypertension, GP visit), COMP-HEALTH-SILVER, Spouse Dependent, NON-PANEL GP, APPROVED with reduced payout",
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
+"verdict": "Claim parsed: hypertension outpatient",
+"keyNumbers": "SILVER plan · policy HIC-2023-…456"
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates"
+},
+{
+"name": "Eligibility",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "Eligible — within outpatient limits",
+"keyNumbers": "No waiting-period breach"
+},
+{
+"name": "Medical",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "NON-PANEL provider flagged",
+"keyNumbers": "70% reimbursement rate applies"
+},
+{
+"name": "Adjudication",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "Zero benefit — base absorbed by deductible",
+"keyNumbers": "Base SGD 133 vs deductible remaining SGD 1,820"
+},
+{
+"name": "Disbursement",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "No disbursement — nothing payable",
+"keyNumbers": "Net SGD 0 · claimant liable SGD 380"
+}
+],
+"final": {
+"status": "APPROVED",
+"amount": 0.0,
+"note": "Zero benefit: the covered base fell entirely within the member's remaining deductible, so nothing is payable."
+}
+},
+{
+"id": "B003",
+"title": "B003 — Maternity (Normal delivery), COMP-HEALTH-GOLD, Self, REJECTED at Node 3 (Waiting Period Not Met)",
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
+"verdict": "Claim parsed: normal delivery maternity",
+"keyNumbers": "GOLD plan · policy HIC-2025-…789"
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates"
+},
+{
+"name": "Eligibility",
+"status": "fail",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "DENIED — maternity waiting period not met",
+"keyNumbers": "65 days elapsed · requested SGD 8,200"
+},
+{
+"name": "Medical",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries"
+},
+{
+"name": "Adjudication",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable"
+},
+{
+"name": "Disbursement",
+"status": "skipped",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit"
+}
+],
+"final": {
+"status": "DENIED",
+"reason": "DENIED — maternity waiting period not met"
+}
+},
+{
+"id": "B004",
+"title": "B004 — Surgical (Appendectomy), COMP-HEALTH-BRONZE, Self, Non-Panel Hospital, APPROVED with 60% non-panel reimbursement",
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
+"verdict": "Claim parsed: appendectomy surgical",
+"keyNumbers": "BRONZE plan · policy HIC-…"
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates"
+},
+{
+"name": "Eligibility",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "Eligible — within surgical limits",
+"keyNumbers": "No waiting-period breach"
+},
+{
+"name": "Medical",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "NON-PANEL provider flagged",
+"keyNumbers": "60% reimbursement rate applies"
+},
+{
+"name": "Adjudication",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "Adjudicated — deductible + co-pay applied",
+"keyNumbers": "SGD 3,500 deductible · 20% co-pay"
+},
+{
+"name": "Disbursement",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "Disbursed — partial reimbursement",
+"keyNumbers": "SGD 1,120.00 · claimant liable SGD 10,680"
+}
+],
+"final": {
+"status": "APPROVED",
+"amount": 1120.0
+}
+},
+{
+"id": "B005",
+"title": "B005 — Emergency (Closed Radius Fracture from Fall), COMP-HEALTH-GOLD, Self, REJECTED at Node 2 (Duplicate Claim)",
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
+"verdict": "Claim parsed: fracture emergency",
+"keyNumbers": "GOLD plan · policy HIC-2024-…099"
+},
+{
+"name": "Verify",
+"status": "fail",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "DENIED — duplicate of an already-paid claim",
+"keyNumbers": "Existing paid claim CLM-2025-0000877"
+},
+{
+"name": "Eligibility",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods"
+},
+{
+"name": "Medical",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries"
+},
+{
+"name": "Adjudication",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable"
+},
+{
+"name": "Disbursement",
+"status": "skipped",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit"
+}
+],
+"final": {
+"status": "DENIED",
+"reason": "DENIED — duplicate of an already-paid claim"
+}
+}
+]
+</script>
+<script id="demo-app">
+// app code added in Task 4
+</script>
+</body>
+</html>
