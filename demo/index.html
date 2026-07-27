@@ -4,8 +4,66 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AutoClaim AI — Demo</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3;
+    --muted:#8b949e; --pass:#2ea043; --fail:#f85149; --active:#58a6ff;
+    --skip:#484f58; --amber:#d29922;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
+  h1{font-size:22px;margin:0}
+  .wrap{max-width:1080px;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px}
+  select,button{background:var(--panel);color:var(--text);
+    border:1px solid var(--border);border-radius:6px;padding:8px 12px;font:inherit;cursor:pointer}
+  button.primary{background:var(--active);color:#0d1117;border-color:var(--active);font-weight:600}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .badge{font-size:12px;color:var(--muted);border:1px solid var(--border);
+    border-radius:20px;padding:4px 10px}
+  .pipeline{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:8px 0 16px}
+  .node{flex:1;min-width:130px;background:var(--panel);border:2px solid var(--border);
+    border-radius:10px;padding:12px;text-align:center;transition:all .25s;position:relative}
+  .node .idx{font-size:11px;color:var(--muted)}
+  .node .nm{font-weight:600;margin-top:4px}
+  .node .st{font-size:11px;margin-top:6px;color:var(--muted)}
+  .node.active{border-color:var(--active);box-shadow:0 0 0 3px rgba(88,166,255,.2)}
+  .node.active.reasoning .st::after{content:" reasoning…";color:var(--active)}
+  .node.pass{border-color:var(--pass)} .node.pass .st{color:var(--pass)}
+  .node.fail{border-color:var(--fail)} .node.fail .st{color:var(--fail)}
+  .node.skipped{opacity:.4}
+  .conn{align-self:center;color:var(--border);padding:0 4px;font-size:18px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;
+    padding:16px 20px;min-height:96px;margin-bottom:16px}
+  .card .cap{color:var(--muted);font-size:13px}
+  .card .verdict{font-weight:600;margin-top:6px}
+  .card .kn{font-size:13px;color:var(--muted);margin-top:4px}
+  .banner{border-radius:10px;padding:16px 20px;font-weight:600;font-size:18px;display:none}
+  .banner.show{display:block}
+  .banner.approved{background:rgba(46,160,67,.15);border:1px solid var(--pass);color:var(--pass)}
+  .banner.denied{background:rgba(248,81,73,.15);border:1px solid var(--fail);color:var(--fail)}
+  .banner .note{font-weight:400;font-size:13px;color:var(--text);margin-top:8px}
+</style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <h1>⚡ AutoClaim AI</h1>
+    <select id="scenario" aria-label="Scenario"></select>
+    <button id="run" class="primary">Process Claim</button>
+    <button id="reset">Reset</button>
+    <span class="badge">Playback mode — captured pipeline output. Run live locally → see README.</span>
+  </header>
+  <div class="pipeline" id="pipeline"></div>
+  <div class="card" id="card">
+    <div class="cap" id="cap">Select a scenario and press <b>Process Claim</b>.</div>
+    <div class="verdict" id="verdict"></div>
+    <div class="kn" id="kn"></div>
+  </div>
+  <div class="banner" id="banner"></div>
+</div>
+
 <script id="demo-data" type="application/json">
 [
 {
@@ -288,7 +346,97 @@
 ]
 </script>
 <script id="demo-app">
-// app code added in Task 4
+const DATA = JSON.parse(document.getElementById("demo-data").textContent);
+const FAST_MS = 300, LLM_MS = 900;
+const $ = (id) => document.getElementById(id);
+const sel = $("scenario"), pipeline = $("pipeline"), banner = $("banner");
+let running = false;
+
+DATA.forEach((d) => {
+  const o = document.createElement("option");
+  o.value = d.id; o.textContent = `${d.id} — ${d.title}`;
+  sel.appendChild(o);
+});
+
+function current() { return DATA.find((d) => d.id === sel.value); }
+
+function renderPipeline(states) {
+  pipeline.innerHTML = "";
+  const d = current();
+  d.stages.forEach((s, i) => {
+    const el = document.createElement("div");
+    el.className = "node " + (states[i] || "pending");
+    el.innerHTML =
+      `<div class="idx">Node ${i + 1}</div>` +
+      `<div class="nm">${s.name}</div>` +
+      `<div class="st">${labelFor(states[i] || "pending")}</div>`;
+    if ((states[i] === "active") && s.llm) el.classList.add("reasoning");
+    pipeline.appendChild(el);
+    if (i < d.stages.length - 1) {
+      const c = document.createElement("div");
+      c.className = "conn"; c.textContent = "→";
+      pipeline.appendChild(c);
+    }
+  });
+}
+
+function labelFor(state) {
+  return { pending: "pending", active: "processing", pass: "✓ pass",
+    fail: "✗ fail", skipped: "skipped" }[state] || state;
+}
+
+function showCard(stage) {
+  $("cap").innerHTML = stage.capability;
+  $("verdict").textContent = stage.verdict || "";
+  $("kn").textContent = stage.keyNumbers || "";
+}
+
+function showBanner(final) {
+  banner.className = "banner show " +
+    (final.status === "APPROVED" ? "approved" : "denied");
+  let html = final.status === "APPROVED"
+    ? `APPROVED · SGD ${final.amount.toLocaleString("en-SG",{minimumFractionDigits:2})} disbursed`
+    : `DENIED · ${final.reason}`;
+  if (final.note) html += `<div class="note">${final.note}</div>`;
+  banner.innerHTML = html;
+}
+
+function reset() {
+  running = false;
+  banner.className = "banner";
+  const d = current();
+  renderPipeline(d.stages.map(() => "pending"));
+  $("cap").innerHTML = "Select a scenario and press <b>Process Claim</b>.";
+  $("verdict").textContent = ""; $("kn").textContent = "";
+}
+
+async function run() {
+  if (running) return;
+  running = true;
+  const d = current();
+  const states = d.stages.map(() => "pending");
+  for (let i = 0; i < d.stages.length; i++) {
+    const s = d.stages[i];
+    if (s.status === "skipped") { states[i] = "skipped"; renderPipeline(states); continue; }
+    states[i] = "active"; renderPipeline(states); showCard(s);
+    await sleep(s.llm ? LLM_MS : FAST_MS);
+    states[i] = s.status; renderPipeline(states); showCard(s);
+    if (s.status === "fail") {  // halt: grey out the rest
+      for (let j = i + 1; j < d.stages.length; j++) states[j] = "skipped";
+      renderPipeline(states);
+      break;
+    }
+    await sleep(150);
+  }
+  showBanner(d.final);
+  running = false;
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+$("run").onclick = run;
+$("reset").onclick = reset;
+sel.onchange = reset;
+reset();
 </script>
 </body>
 </html>
