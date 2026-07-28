@@ -3,440 +3,275 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AutoClaim AI — Demo</title>
+<title>AutoClaim AI — Agent Console</title>
 <style>
   :root{
-    --bg:#0d1117; --panel:#161b22; --border:#30363d; --text:#e6edf3;
-    --muted:#8b949e; --pass:#2ea043; --fail:#f85149; --active:#58a6ff;
-    --skip:#484f58; --amber:#d29922;
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c222b; --border:#30363d;
+    --text:#e6edf3; --muted:#8b949e; --pass:#2ea043; --fail:#f85149;
+    --active:#58a6ff; --skip:#484f58; --ai:#58a6ff; --rule:#d29922;
+    --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--text);
-    font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
-  h1{font-size:22px;margin:0}
-  .wrap{max-width:1080px;margin:0 auto}
-  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:20px}
-  select,button{background:var(--panel);color:var(--text);
-    border:1px solid var(--border);border-radius:6px;padding:8px 12px;font:inherit;cursor:pointer}
+    font:15px/1.55 -apple-system,Segoe UI,Roboto,sans-serif;padding:24px}
+  .wrap{max-width:1000px;margin:0 auto}
+  h1{font-size:20px;margin:0;letter-spacing:.2px}
+  h1 .dot{color:var(--active)}
+  header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+  .grow{flex:1}
+  select,button{background:var(--panel);color:var(--text);border:1px solid var(--border);
+    border-radius:6px;padding:8px 12px;font:inherit;cursor:pointer}
   button.primary{background:var(--active);color:#0d1117;border-color:var(--active);font-weight:600}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .badge{font-size:12px;color:var(--muted);border:1px solid var(--border);
-    border-radius:20px;padding:4px 10px}
-  .pipeline{display:flex;align-items:stretch;gap:0;overflow-x:auto;padding:8px 0 16px}
-  .node{flex:1;min-width:130px;background:var(--panel);border:2px solid var(--border);
-    border-radius:10px;padding:12px;text-align:center;transition:all .25s;position:relative}
-  .node .idx{font-size:11px;color:var(--muted)}
-  .node .nm{font-weight:600;margin-top:4px}
-  .node .st{font-size:11px;margin-top:6px;color:var(--muted)}
-  .node.active{border-color:var(--active);box-shadow:0 0 0 3px rgba(88,166,255,.2)}
-  .node.active.reasoning .st::after{content:" reasoning…";color:var(--active)}
-  .node.pass{border-color:var(--pass)} .node.pass .st{color:var(--pass)}
-  .node.fail{border-color:var(--fail)} .node.fail .st{color:var(--fail)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .badge{display:inline-block;font-size:12px;color:var(--muted);border:1px solid var(--border);
+    border-radius:20px;padding:4px 10px;margin-bottom:16px}
+  /* Act 1 */
+  .review{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .ov{display:flex;flex-wrap:wrap;gap:6px 18px;align-items:baseline;margin-bottom:12px}
+  .ov .big{font-size:17px;font-weight:600}
+  .ov .m{color:var(--muted);font-size:13px}
+  .tabs{display:flex;gap:4px;border-bottom:1px solid var(--border)}
+  .tab{padding:7px 12px;font-size:13px;color:var(--muted);border:1px solid transparent;
+    border-bottom:none;border-radius:6px 6px 0 0;cursor:pointer}
+  .tab.on{color:var(--text);background:var(--panel2);border-color:var(--border)}
+  .doc{background:var(--panel2);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;
+    padding:14px;font:12.5px/1.5 var(--mono);white-space:pre-wrap;max-height:340px;overflow:auto;color:#c9d1d9}
+  .chip{display:none;background:var(--panel);border:1px solid var(--border);border-radius:20px;
+    padding:8px 14px;margin-bottom:14px;cursor:pointer;font-size:13px}
+  .chip .k{color:var(--muted)}
+  /* Pipeline */
+  .pipeline{align-items:stretch;gap:0;overflow-x:auto;padding:6px 0 14px;display:none}
+  .node{flex:1;min-width:120px;background:var(--panel);border:2px solid var(--border);border-radius:10px;
+    padding:10px;text-align:center;transition:all .25s;position:relative}
+  .node .led{width:8px;height:8px;border-radius:50%;background:var(--skip);margin:0 auto 6px;transition:all .25s}
+  .node .nm{font-weight:600;font-size:14px}
+  .node .tp{font-size:10px;letter-spacing:.5px;margin-top:3px}
+  .node.llm .tp{color:var(--ai)} .node:not(.llm) .tp{color:var(--rule)}
+  .node.active{border-color:var(--active)}
+  .node.active .led{background:var(--active);box-shadow:0 0 8px var(--active);animation:pulse 1s infinite}
+  .node.pass{border-color:var(--pass)} .node.pass .led{background:var(--pass)}
+  .node.fail{border-color:var(--fail)} .node.fail .led{background:var(--fail)}
   .node.skipped{opacity:.4}
-  .conn{align-self:center;color:var(--border);padding:0 4px;font-size:18px}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:10px;
-    padding:16px 20px;min-height:96px;margin-bottom:16px}
-  .card .cap{color:var(--muted);font-size:13px}
-  .card .verdict{font-weight:600;margin-top:6px}
-  .card .kn{font-size:13px;color:var(--muted);margin-top:4px}
-  .banner{border-radius:10px;padding:16px 20px;font-weight:600;font-size:18px;display:none}
+  @keyframes pulse{50%{opacity:.4}}
+  .conn{align-self:center;color:var(--border);padding:0 3px}
+  /* Trace */
+  .trace{display:none;background:#0a0d12;border:1px solid var(--border);border-radius:10px;margin-bottom:16px;overflow:hidden}
+  .trace .th{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);font-size:13px}
+  .tlog{padding:6px 0;max-height:420px;overflow:auto}
+  .tblock{border-bottom:1px solid #161b22}
+  .tbh{display:flex;align-items:center;gap:8px;padding:8px 14px;cursor:pointer;font-size:13px}
+  .tbh .nm{font-weight:600}
+  .tbh .sum{color:var(--muted);font-size:12px}
+  .tbh .arrow{color:var(--muted);transition:transform .2s}
+  .tblock.open .tbh .arrow{transform:rotate(90deg)}
+  .tsteps{display:none;padding:2px 14px 10px 14px}
+  .tblock.open .tsteps{display:block}
+  .tstep{display:flex;gap:8px;padding:3px 0;font:12.5px/1.5 var(--mono);align-items:baseline}
+  .tag{font-size:10px;font-weight:700;padding:1px 5px;border-radius:4px;flex:none}
+  .tag.AI{color:var(--ai);background:rgba(88,166,255,.12);border:1px solid rgba(88,166,255,.3)}
+  .tag.RULE{color:var(--rule);background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.3)}
+  .tstep .lb{color:var(--text)} .tstep .dt{color:var(--muted)}
+  .tstep.fail .lb{color:var(--fail)}
+  .ok{color:var(--pass)} .no{color:var(--fail)}
+  /* Banner */
+  .banner{border-radius:10px;padding:15px 18px;font-weight:600;font-size:18px;display:none;margin-bottom:16px}
   .banner.show{display:block}
-  .banner.approved{background:rgba(46,160,67,.15);border:1px solid var(--pass);color:var(--pass)}
-  .banner.denied{background:rgba(248,81,73,.15);border:1px solid var(--fail);color:var(--fail)}
+  .banner.approved{background:rgba(46,160,67,.14);border:1px solid var(--pass);color:var(--pass)}
+  .banner.denied{background:rgba(248,81,73,.14);border:1px solid var(--fail);color:var(--fail)}
   .banner .note{font-weight:400;font-size:13px;color:var(--text);margin-top:8px}
+  /* Arch footer */
+  .arch{border:1px solid var(--border);border-radius:10px;padding:12px 16px;color:var(--muted);font-size:13px}
+  .arch summary{cursor:pointer;list-style:none}
+  .arch summary::-webkit-details-marker{display:none}
+  .arch .strip{color:var(--text)}
+  .arch .diag{margin-top:10px;font:12px/1.6 var(--mono);white-space:pre-wrap;color:#c9d1d9}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <h1>⚡ AutoClaim AI</h1>
+    <h1><span class="dot">●</span> AutoClaim AI <span style="color:var(--muted);font-weight:400;font-size:13px">agent console</span></h1>
+    <span class="grow"></span>
     <select id="scenario" aria-label="Scenario"></select>
-    <button id="run" class="primary">Process Claim</button>
+    <button id="run" class="primary">Start processing →</button>
     <button id="reset">Reset</button>
-    <span class="badge">Playback mode — captured pipeline output. Run live locally → see README.</span>
   </header>
+  <span class="badge">Playback mode — captured pipeline output. Run live locally → see README.</span>
+
+  <!-- Act 1: claim review -->
+  <div class="review" id="review"></div>
+  <!-- collapsed chip (Act 2) -->
+  <div class="chip" id="chip"></div>
+
+  <!-- Act 2: pipeline + trace -->
   <div class="pipeline" id="pipeline"></div>
-  <div class="card" id="card">
-    <div class="cap" id="cap">Select a scenario and press <b>Process Claim</b>.</div>
-    <div class="verdict" id="verdict"></div>
-    <div class="kn" id="kn"></div>
+  <div class="trace" id="trace">
+    <div class="th"><b>Live reasoning trace</b><span class="grow"></span>
+      <button id="expandAll" style="font-size:12px;padding:4px 8px">Show full trace</button></div>
+    <div class="tlog" id="tlog"></div>
   </div>
   <div class="banner" id="banner"></div>
+
+  <details class="arch">
+    <summary><span class="strip">⚙ Architecture</span> — FastAPI · Nemotron · DeepSeek · SQLite×3 · K8s/VKE <span style="float:right">▸</span></summary>
+    <div class="diag">Node 1 Intake      → Nemotron reasoning agent → parse_pdf_file → structured fields
+Node 2 Verify      → deterministic Python  → policies DB (member, duplicates)
+Node 3 Eligibility → DeepSeek              → plan-document limits + RULE guardrails
+Node 4 Medical     → DeepSeek agent        → 6 tools: provider/SMC registry, ICD-10, CPT, RPS, pre-auth
+Node 5 Adjudication→ DeepSeek + RULE math  → deductible · co-pay · co-insurance → net payable
+Node 6 Disbursement→ deterministic Python  → payment channel + ledger commit
+Guardrails (RULE) can override any LLM verdict · Pydantic field lineage carried node→node</div>
+  </details>
 </div>
 
 <script id="demo-data" type="application/json">
-[
-{
-"id": "B001",
-"title": "B001 — Hospitalisation (Community-Acquired Pneumonia, 4 days), COMP-HEALTH-GOLD, Self, FULLY APPROVED",
-"stages": [
-{
-"name": "Intake",
-"status": "pass",
-"llm": true,
-"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
-"verdict": "Claim parsed: pneumonia hospitalisation",
-"keyNumbers": "GOLD plan · policy HIC-2025-…1101"
-},
-{
-"name": "Verify",
-"status": "pass",
-"llm": false,
-"capability": "Deterministic policy & member validation against the ledger",
-"verdict": "Policy active, member verified",
-"keyNumbers": "Claimant matched · no duplicates"
-},
-{
-"name": "Eligibility",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
-"verdict": "Eligible — within annual & lifetime limits",
-"keyNumbers": "No waiting-period breach"
-},
-{
-"name": "Medical",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
-"verdict": "Codes valid, provider & physician accredited",
-"keyNumbers": "ICD/CPT verified · panel provider"
-},
-{
-"name": "Adjudication",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
-"verdict": "Adjudicated — full cost-share applied",
-"keyNumbers": "Net payable SGD 14,962.50"
-},
-{
-"name": "Disbursement",
-"status": "pass",
-"llm": false,
-"capability": "Deterministic payment-channel validation & ledger commit",
-"verdict": "Disbursed via direct credit (DBS), T+3",
-"keyNumbers": "SGD 14,962.50 · ref CLM-2025-0001101"
-}
-],
-"final": {
-"status": "APPROVED",
-"amount": 14962.5
-}
-},
-{
-"id": "B002",
-"title": "B002 — Outpatient (Essential Hypertension, GP visit), COMP-HEALTH-SILVER, Spouse Dependent, NON-PANEL GP, APPROVED with reduced payout",
-"stages": [
-{
-"name": "Intake",
-"status": "pass",
-"llm": true,
-"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
-"verdict": "Claim parsed: hypertension outpatient",
-"keyNumbers": "SILVER plan · policy HIC-2023-…456"
-},
-{
-"name": "Verify",
-"status": "pass",
-"llm": false,
-"capability": "Deterministic policy & member validation against the ledger",
-"verdict": "Policy active, member verified",
-"keyNumbers": "Claimant matched · no duplicates"
-},
-{
-"name": "Eligibility",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
-"verdict": "Eligible — within outpatient limits",
-"keyNumbers": "No waiting-period breach"
-},
-{
-"name": "Medical",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
-"verdict": "NON-PANEL provider flagged",
-"keyNumbers": "70% reimbursement rate applies"
-},
-{
-"name": "Adjudication",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
-"verdict": "Zero benefit — base absorbed by deductible",
-"keyNumbers": "Base SGD 133 vs deductible remaining SGD 1,820"
-},
-{
-"name": "Disbursement",
-"status": "pass",
-"llm": false,
-"capability": "Deterministic payment-channel validation & ledger commit",
-"verdict": "No disbursement — nothing payable",
-"keyNumbers": "Net SGD 0 · claimant liable SGD 380"
-}
-],
-"final": {
-"status": "APPROVED",
-"amount": 0.0,
-"note": "Zero benefit: the covered base fell entirely within the member's remaining deductible, so nothing is payable."
-}
-},
-{
-"id": "B003",
-"title": "B003 — Maternity (Normal delivery), COMP-HEALTH-GOLD, Self, REJECTED at Node 3 (Waiting Period Not Met)",
-"stages": [
-{
-"name": "Intake",
-"status": "pass",
-"llm": true,
-"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
-"verdict": "Claim parsed: normal delivery maternity",
-"keyNumbers": "GOLD plan · policy HIC-2025-…789"
-},
-{
-"name": "Verify",
-"status": "pass",
-"llm": false,
-"capability": "Deterministic policy & member validation against the ledger",
-"verdict": "Policy active, member verified",
-"keyNumbers": "Claimant matched · no duplicates"
-},
-{
-"name": "Eligibility",
-"status": "fail",
-"llm": true,
-"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
-"verdict": "DENIED — maternity waiting period not met",
-"keyNumbers": "65 days elapsed · requested SGD 8,200"
-},
-{
-"name": "Medical",
-"status": "skipped",
-"llm": true,
-"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries"
-},
-{
-"name": "Adjudication",
-"status": "skipped",
-"llm": true,
-"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable"
-},
-{
-"name": "Disbursement",
-"status": "skipped",
-"llm": false,
-"capability": "Deterministic payment-channel validation & ledger commit"
-}
-],
-"final": {
-"status": "DENIED",
-"reason": "DENIED — maternity waiting period not met"
-}
-},
-{
-"id": "B004",
-"title": "B004 — Surgical (Appendectomy), COMP-HEALTH-BRONZE, Self, Non-Panel Hospital, APPROVED with 60% non-panel reimbursement",
-"stages": [
-{
-"name": "Intake",
-"status": "pass",
-"llm": true,
-"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
-"verdict": "Claim parsed: appendectomy surgical",
-"keyNumbers": "BRONZE plan · policy HIC-…"
-},
-{
-"name": "Verify",
-"status": "pass",
-"llm": false,
-"capability": "Deterministic policy & member validation against the ledger",
-"verdict": "Policy active, member verified",
-"keyNumbers": "Claimant matched · no duplicates"
-},
-{
-"name": "Eligibility",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
-"verdict": "Eligible — within surgical limits",
-"keyNumbers": "No waiting-period breach"
-},
-{
-"name": "Medical",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
-"verdict": "NON-PANEL provider flagged",
-"keyNumbers": "60% reimbursement rate applies"
-},
-{
-"name": "Adjudication",
-"status": "pass",
-"llm": true,
-"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
-"verdict": "Adjudicated — deductible + co-pay applied",
-"keyNumbers": "SGD 3,500 deductible · 20% co-pay"
-},
-{
-"name": "Disbursement",
-"status": "pass",
-"llm": false,
-"capability": "Deterministic payment-channel validation & ledger commit",
-"verdict": "Disbursed — partial reimbursement",
-"keyNumbers": "SGD 1,120.00 · claimant liable SGD 10,680"
-}
-],
-"final": {
-"status": "APPROVED",
-"amount": 1120.0
-}
-},
-{
-"id": "B005",
-"title": "B005 — Emergency (Closed Radius Fracture from Fall), COMP-HEALTH-GOLD, Self, REJECTED at Node 2 (Duplicate Claim)",
-"stages": [
-{
-"name": "Intake",
-"status": "pass",
-"llm": true,
-"capability": "Nemotron agent reads the claim PDF and extracts structured fields",
-"verdict": "Claim parsed: fracture emergency",
-"keyNumbers": "GOLD plan · policy HIC-2024-…099"
-},
-{
-"name": "Verify",
-"status": "fail",
-"llm": false,
-"capability": "Deterministic policy & member validation against the ledger",
-"verdict": "DENIED — duplicate of an already-paid claim",
-"keyNumbers": "Existing paid claim CLM-2025-0000877"
-},
-{
-"name": "Eligibility",
-"status": "skipped",
-"llm": true,
-"capability": "DeepSeek reads the plan document, extracts limits & waiting periods"
-},
-{
-"name": "Medical",
-"status": "skipped",
-"llm": true,
-"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries"
-},
-{
-"name": "Adjudication",
-"status": "skipped",
-"llm": true,
-"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable"
-},
-{
-"name": "Disbursement",
-"status": "skipped",
-"llm": false,
-"capability": "Deterministic payment-channel validation & ledger commit"
-}
-],
-"final": {
-"status": "DENIED",
-"reason": "DENIED — duplicate of an already-paid claim"
-}
-}
-]
+[]
 </script>
 <script id="demo-app">
 const DATA = JSON.parse(document.getElementById("demo-data").textContent);
-const FAST_MS = 300, LLM_MS = 900;
+const FAST_MS = 300, LLM_MS = 900, STEP_MS = 220;
 const $ = (id) => document.getElementById(id);
-const sel = $("scenario"), pipeline = $("pipeline"), banner = $("banner");
-let running = false;
+const sel = $("scenario"), pipeline = $("pipeline"), trace = $("trace"),
+      tlog = $("tlog"), banner = $("banner"), review = $("review"), chip = $("chip");
+let running = false, fullTrace = false, docTab = 0;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 DATA.forEach((d) => {
   const o = document.createElement("option");
-  o.value = d.id; o.textContent = `${d.id} — ${d.title}`;
+  o.value = d.id; o.textContent = `${d.id} — ${d.meta.claimType}`;
   sel.appendChild(o);
 });
+function current(){ return DATA.find((d) => d.id === sel.value); }
+const money = (n) => "SGD " + n.toLocaleString("en-SG",{minimumFractionDigits:2});
 
-function current() { return DATA.find((d) => d.id === sel.value); }
+function renderReview(){
+  const d = current();
+  const docTabs = d.documents.map((doc,i) =>
+    `<div class="tab ${i===docTab?'on':''}" data-i="${i}">${doc.type}</div>`).join("");
+  const body = d.documents.length ? d.documents[docTab].text : "(no source document)";
+  review.innerHTML =
+    `<div class="ov"><span class="big">${d.id} · ${d.meta.plan} · ${d.meta.claimType}</span>`+
+    `<span class="m">${d.meta.patient} (${d.meta.relationship}) · billed ${money(d.meta.billed)} · asks ${d.meta.asks}</span></div>`+
+    `<div class="tabs">${docTabs}</div><div class="doc" id="doc"></div>`;
+  $("doc").textContent = body;
+  review.querySelectorAll(".tab").forEach((t) =>
+    t.onclick = () => { docTab = +t.dataset.i; renderReview(); });
+}
 
-function renderPipeline(states) {
+function renderChip(){
+  const d = current();
+  chip.innerHTML = `<span class="k">claim</span> ${d.id} · ${d.meta.plan} · `+
+    `${d.meta.claimType} · billed ${money(d.meta.billed)} <span class="k">▾ docs</span>`;
+}
+
+function renderPipeline(states){
   pipeline.innerHTML = "";
   const d = current();
-  d.stages.forEach((s, i) => {
+  d.stages.forEach((s,i) => {
     const el = document.createElement("div");
-    el.className = "node " + (states[i] || "pending");
-    el.innerHTML =
-      `<div class="idx">Node ${i + 1}</div>` +
-      `<div class="nm">${s.name}</div>` +
-      `<div class="st">${labelFor(states[i] || "pending")}</div>`;
-    if ((states[i] === "active") && s.llm) el.classList.add("reasoning");
+    el.className = "node " + (states[i]||"pending") + (s.llm?" llm":"");
+    el.innerHTML = `<div class="led"></div><div class="nm">${s.name}</div>`+
+      `<div class="tp">${s.llm?"AI AGENT":"DETERMINISTIC"}</div>`;
     pipeline.appendChild(el);
-    if (i < d.stages.length - 1) {
-      const c = document.createElement("div");
-      c.className = "conn"; c.textContent = "→";
+    if (i < d.stages.length-1){
+      const c = document.createElement("div"); c.className="conn"; c.textContent="→";
       pipeline.appendChild(c);
     }
   });
 }
 
-function labelFor(state) {
-  return { pending: "pending", active: "processing", pass: "✓ pass",
-    fail: "✗ fail", skipped: "skipped" }[state] || state;
+function stepRow(st){
+  const icon = st.status==="fail" ? '<span class="no">✗</span>' : '<span class="ok">✓</span>';
+  return `<div class="tstep ${st.status}"><span class="tag ${st.tag}">${st.tag}</span>`+
+    `<span>${icon}</span><span class="lb">${st.label}</span> `+
+    `<span class="dt">— ${st.detail}</span></div>`;
 }
 
-function showCard(stage) {
-  $("cap").innerHTML = stage.capability;
-  $("verdict").textContent = stage.verdict || "";
-  $("kn").textContent = stage.keyNumbers || "";
+function addTraceBlock(stage){
+  const block = document.createElement("div");
+  block.className = "tblock open";
+  const passN = stage.steps.filter((s)=>s.status==="pass").length;
+  block.innerHTML =
+    `<div class="tbh"><span class="arrow">▸</span><span class="nm">${stage.name}</span>`+
+    `<span class="sum">${passN}/${stage.steps.length} steps · ${stage.llm?"AI":"RULE"}</span></div>`+
+    `<div class="tsteps"></div>`;
+  block.querySelector(".tbh").onclick = () => block.classList.toggle("open");
+  tlog.appendChild(block);
+  return block;
 }
 
-function showBanner(final) {
-  banner.className = "banner show " +
-    (final.status === "APPROVED" ? "approved" : "denied");
-  let html = final.status === "APPROVED"
-    ? `APPROVED · SGD ${final.amount.toLocaleString("en-SG",{minimumFractionDigits:2})} disbursed`
+async function streamSteps(block, stage){
+  const host = block.querySelector(".tsteps");
+  for (const st of stage.steps){
+    host.insertAdjacentHTML("beforeend", stepRow(st));
+    tlog.scrollTop = tlog.scrollHeight;
+    await sleep(STEP_MS);
+  }
+  if (!fullTrace) block.classList.remove("open");  // collapse to summary after run
+}
+
+function showBanner(final){
+  banner.className = "banner show " + (final.status==="APPROVED"?"approved":"denied");
+  let html = final.status==="APPROVED"
+    ? `APPROVED · ${money(final.amount)} disbursed`
     : `DENIED · ${final.reason}`;
   if (final.note) html += `<div class="note">${final.note}</div>`;
   banner.innerHTML = html;
 }
 
-function reset() {
-  running = false;
+function toReviewMode(){
+  running = false; fullTrace = false;
   banner.className = "banner";
-  const d = current();
-  renderPipeline(d.stages.map(() => "pending"));
-  $("cap").innerHTML = "Select a scenario and press <b>Process Claim</b>.";
-  $("verdict").textContent = ""; $("kn").textContent = "";
+  review.style.display = ""; chip.style.display = "none";
+  pipeline.style.display = "none"; trace.style.display = "none";
+  tlog.innerHTML = "";
+  $("expandAll").textContent = "Show full trace";
+  renderReview();
 }
 
-async function run() {
+function toProcessingMode(){
+  review.style.display = "none";
+  chip.style.display = "inline-block"; renderChip();
+  pipeline.style.display = "flex"; trace.style.display = "block";
+  tlog.innerHTML = "";
+}
+
+async function run(){
   if (running) return;
   running = true;
   const d = current();
-  const states = d.stages.map(() => "pending");
-  for (let i = 0; i < d.stages.length; i++) {
+  toProcessingMode();
+  const states = d.stages.map(()=>"pending");
+  renderPipeline(states);
+  for (let i=0;i<d.stages.length;i++){
     const s = d.stages[i];
-    if (s.status === "skipped") { states[i] = "skipped"; renderPipeline(states); continue; }
-    states[i] = "active"; renderPipeline(states); showCard(s);
-    await sleep(s.llm ? LLM_MS : FAST_MS);
-    states[i] = s.status; renderPipeline(states); showCard(s);
-    if (s.status === "fail") {  // halt: grey out the rest
-      for (let j = i + 1; j < d.stages.length; j++) states[j] = "skipped";
-      renderPipeline(states);
-      break;
+    if (s.status==="skipped"){ states[i]="skipped"; renderPipeline(states); continue; }
+    states[i]="active"; renderPipeline(states);
+    const block = addTraceBlock(s);
+    await sleep(s.llm?LLM_MS:FAST_MS);
+    await streamSteps(block, s);
+    states[i]=s.status; renderPipeline(states);
+    if (s.status==="fail"){
+      for (let j=i+1;j<d.stages.length;j++) states[j]="skipped";
+      renderPipeline(states); break;
     }
-    await sleep(150);
+    await sleep(120);
   }
   showBanner(d.final);
   running = false;
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 $("run").onclick = run;
-$("reset").onclick = reset;
-sel.onchange = reset;
-reset();
+$("reset").onclick = toReviewMode;
+sel.onchange = () => { docTab = 0; toReviewMode(); };
+$("chip").onclick = () => { if(!running) toReviewMode(); };
+$("expandAll").onclick = () => {
+  fullTrace = !fullTrace;
+  tlog.querySelectorAll(".tblock").forEach((b)=>b.classList.toggle("open", fullTrace));
+  $("expandAll").textContent = fullTrace ? "Collapse trace" : "Show full trace";
+};
+
+toReviewMode();
 </script>
 </body>
 </html>
