@@ -422,4 +422,4 @@ def inject(data):
 if __name__ == "__main__":
     data = build_all()
     _self_check(data)
-    # inject(data)  # enabled in Task 4 once index.html has the marked region
+    inject(data)

@@ -125,7 +125,992 @@ Guardrails (RULE) can override any LLM verdict · Pydantic field lineage carried
 </div>
 
 <script id="demo-data" type="application/json">
-[]
+[
+{
+"id": "B001",
+"title": "B001 — Hospitalisation (Community-Acquired Pneumonia, 4 days), COMP-HEALTH-GOLD, Self, FULLY APPROVED",
+"meta": {
+"plan": "GOLD",
+"patient": "Tan Wei Ming",
+"relationship": "self",
+"claimType": "Hospitalisation",
+"billed": 18500.0,
+"asks": "full hospitalisation payout"
+},
+"documents": [
+{
+"type": "Medical Bill",
+"text": "MEDICAL BILL\nSingapore General Hospital\nOutram Road, Singapore 169608\nTel: +65 6222 3322 | Reg No: 198904226Z\n\n=============================================\nBILL DATE:       14 April 2025\nPATIENT NAME:    Tan Wei Ming\nNRIC:            S7801234A\nDATE OF BIRTH:   22 March 1978\nWARD:            Bunga Mas 6, Class B2\nADMISSION DATE:  10 April 2025\nDISCHARGE DATE:  14 April 2025\n=============================================\n\nITEMISED CHARGES\n----------------\nWard Charges (Class B2 - 4 Nights)        SGD  4,800.00\n  @ SGD 1,200 per night x 4 nights\n\nPhysician Consultation (Dr. Chong WL)     SGD  1,000.00\n  @ SGD 250 per visit x 4 visits\n  (10 Apr, 11 Apr, 12 Apr, 13 Apr 2025)\n\nChest X-Ray (2 views) - 10 Apr 2025       SGD    120.00\n  CPT Code: 71046\n\nIV Amoxicillin-Clavulanate (5 days)       SGD    840.00\n  @ SGD 210 per day x 4 days\n\nNursing Procedures & Consumables          SGD 11,740.00\n\n                                         ____________\nTOTAL BILLED AMOUNT:                     SGD 18,500.00\n\nPRE-AUTHORISATION NO:   PA-2025-110001\nPROVIDER REGISTRATION:  MOH-HOSP-00142\n\nPayment due within 30 days of discharge.\n=============================================\nIssued by: SGH Finance Department"
+},
+{
+"type": "Discharge Summary",
+"text": "DISCHARGE SUMMARY\nSingapore General Hospital — Department of Internal Medicine\nOutram Road, Singapore 169608\n\n=============================================\nPATIENT:         Tan Wei Ming\nNRIC:            S7801234A\nDOB:             22 March 1978\nMRN:             SGH-2025-041014\nADMISSION DATE:  10 April 2025 (09:45)\nDISCHARGE DATE:  14 April 2025 (11:30)\nWARD:            Bunga Mas 6, Class B2\n\nATTENDING PHYSICIAN:\n  Dr. Chong Wei Liang\n  Specialist in Internal Medicine\n  SMC Licence: MCR-10234A\n  Singapore General Hospital, Dept. of General Medicine\n=============================================\n\nPRIMARY DIAGNOSIS:\n  J18.9 — Pneumonia, unspecified organism\n  (Community-Acquired Pneumonia, moderate severity)\n\nSYMPTOM ONSET:\n  Patient reported onset of productive cough, fever (38.8°C), and\n  dyspnoea approximately 3 days prior to admission.\n  Estimated symptom onset date: 07 April 2025.\n\nHISTORY OF PRESENTING ILLNESS:\n  Mr. Tan Wei Ming, a 47-year-old male, presented to the SGH Emergency\n  Department on 10 April 2025 with a 3-day history of productive\n  cough, high-grade fever (38.8°C), and worsening shortness of breath.\n  He had no significant past medical history and was not on regular\n  medications. SpO2 on admission was 91% on room air.\n\nINVESTIGATIONS:\n  - Chest X-Ray (71046): Bilateral lower zone consolidations consistent\n    with pneumonia. (10 April 2025)\n  - Full Blood Count: WBC 14.2 x10^9/L (elevated, consistent with\n    bacterial pneumonia)\n  - C-Reactive Protein: 112 mg/L (elevated)\n  - Blood cultures: No growth after 48 hours\n\nTREATMENT:\n  - IV Amoxicillin-Clavulanate 1.2g q8h x 4 days\n  - Supplemental O2 therapy (nasal cannula, 2–4 L/min)\n  - Inpatient physician review daily (CPT 99232 x4)\n  - Physiotherapy for chest clearance\n\nCLINICAL COURSE:\n  Patient showed clinical improvement by Day 3. Fever resolved on\n  Day 2. SpO2 improved to 97% on room air by Day 3. Tolerating oral\n  feeds and ambulating independently by Day 4.\n\nDISCHARGE CONDITION:\n  Stable. Apyrexial. SpO2 97% on room air.\n\nDISCHARGE MEDICATIONS:\n  - Amoxicillin-Clavulanate 625mg PO TDS x 5 days\n  - Paracetamol 500mg PRN for fever\n\nFOLLOW-UP:\n  Review at SGH General Medicine Outpatient Clinic in 2 weeks.\n\nPRE-AUTHORISATION:   PA-2025-110001\n\nSigned: Dr. Chong Wei Liang (MCR-10234A)\nDate:   14 April 2025\n============================================="
+},
+{
+"type": "Pre-Auth Approval",
+"text": "PRE-AUTHORISATION APPROVAL CERTIFICATE\nTPMN Health Insurance — Medical Pre-Authorisation Unit\n10 Marina Boulevard, Singapore 018983\nTel: +65 6123 4567 | Fax: +65 6123 4568\n\n=============================================\nPRE-AUTHORISATION NUMBER:  PA-2025-110001\nDATE ISSUED:               08 April 2025\nSTATUS:                    APPROVED\n=============================================\n\nPOLICY DETAILS:\n  Policy No:         HIC-2024-00123\n  Plan:              COMP-HEALTH-GOLD\n  Policyholder:      Tan Wei Ming\n\nCLAIMANT DETAILS:\n  Name:              Tan Wei Ming\n  NRIC:              S7801234A\n  Relationship:      Self\n\nCLAIM DETAILS:\n  Claim Type:        Hospitalisation\n  Provider:          Singapore General Hospital\n  Provider Reg No:   MOH-HOSP-00142\n  Attending Physician: Dr. Chong Wei Liang (MCR-10234A)\n  Estimated Admission: 10 April 2025\n  Estimated Discharge: 14 April 2025 (estimated)\n  Diagnosis:         Community-Acquired Pneumonia (J18.9)\n\nAUTHORISATION:\n  Authorised Amount: SGD 50,000.00 (maximum)\n  Validity:          08 April 2025 to 08 July 2025\n  Expiry Date:       08 July 2025\n\nCONDITIONS:\n  1. This pre-authorisation is valid only for the above-named claimant,\n     policy, and provider.\n  2. Actual claim reimbursement is subject to policy terms, benefit\n     limits, deductibles, and co-payments.\n  3. Admission must occur within the validity period.\n  4. This document must be presented at admission and submitted with\n     the claim.\n\nAuthorised by: TPMN Pre-Authorisation Unit\nReference Officer: Ms. Siti Rahimah\nDate: 08 April 2025\n============================================="
+}
+],
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim documents and extracts structured fields",
+"verdict": "Claim parsed: pneumonia hospitalisation",
+"keyNumbers": "GOLD plan · policy HIC-2025-…1101",
+"steps": [
+{
+"tag": "AI",
+"label": "Read 3 source document(s)",
+"detail": "Medical Bill, Discharge Summary, Pre-Auth Approval",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "Extracted 12 structured fields",
+"detail": "ICD-10 J18.9 · CPT 99232, 71046 · billed SGD 18,500.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Intake completeness check",
+"detail": "all required documents present",
+"status": "pass"
+}
+]
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates",
+"steps": [
+{
+"tag": "RULE",
+"label": "Policy active & in-force",
+"detail": "COMP-HEALTH-GOLD · expires 2026-01-14",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Member / dependent match",
+"detail": "claimant matched on register",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Duplicate-claim check",
+"detail": "no prior paid claim for this incident",
+"status": "pass"
+}
+]
+},
+{
+"name": "Eligibility",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "Eligible — within annual & lifetime limits",
+"keyNumbers": "No waiting-period breach",
+"steps": [
+{
+"tag": "AI",
+"label": "Read plan document → limits & waiting periods",
+"detail": "Claim type hospitalisation is covered under COMP-HEALTH-GOLD. Waiting period of 30 days satisfied (symptom onset 7 Apr 2025 is 812 days after policy inception 1",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Waiting-period check",
+"detail": "30 days elapsed · basis symptom_onset",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Annual-limit check",
+"detail": "remaining SGD 100,000.00 of SGD 100,000.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Exclusion-range check",
+"detail": "no exclusion codes triggered",
+"status": "pass"
+}
+]
+},
+{
+"name": "Medical",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "Codes valid, provider & physician accredited",
+"keyNumbers": "ICD/CPT verified · panel provider",
+"steps": [
+{
+"tag": "RULE",
+"label": "Tool: MOH provider registry",
+"detail": "Singapore General Hospital — Active, MOH-certified Acute General Hospital, scope Full Service, expiry 2027-12-31",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Tool: SMC physician register",
+"detail": "Dr. Chong Wei Liang — Active, Internal Medicine, expiry 2027-06-30",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "CPT 99232 clinical review",
+"detail": "CPT 99232 (subsequent hospital inpatient visit) is a valid active code. It is clinically plausible for ICD-10 J18.9 (Pneumonia, unspecified organism) — daily inpatient physician visits are standard management for pneumonia requiring hospitalisation.",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "CPT 71046 clinical review",
+"detail": "CPT 71046 (radiologic examination, chest; 2 views) is a valid active code. It is clinically plausible for ICD-10 J18.9 — chest X-ray is a standard diagnostic and monitoring tool for pneumonia.",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Pre-authorisation check",
+"detail": "pre-auth on file & matched",
+"status": "pass"
+}
+]
+},
+{
+"name": "Adjudication",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "Adjudicated — full cost-share applied",
+"keyNumbers": "Net payable SGD 14,962.50",
+"steps": [
+{
+"tag": "RULE",
+"label": "Adjudication Base",
+"detail": "min(18500, 100000) = 18500.00 (hospitalisation exempt from rps cap)",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Deductible Applied",
+"detail": "18500 - 17500 = 1000.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Co Pay",
+"detail": "round(17500 × 5/100, 2) = 875.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Co Insurance Applied",
+"detail": "min(1662.50, 3000) = 1662.50",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Net Payable",
+"detail": "round(16625 - 1662.5, 2) = 14962.50",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Claimant Liability",
+"detail": "round(18500 - 14962.5, 2) = 3537.50",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Conservation Check",
+"detail": "14962.5 + 3537.5 = 18500 ✓",
+"status": "pass"
+}
+]
+},
+{
+"name": "Disbursement",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "Disbursed via direct credit (DBS), T+3",
+"keyNumbers": "SGD 14,962.50 · ref CLM-2025-0001101",
+"steps": [
+{
+"tag": "RULE",
+"label": "Payment-channel validation",
+"detail": "direct_credit → Tan Wei Ming (DBS Bank ******9123)",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Disbursement status",
+"detail": "Claim CLM-2025-0001101 approved. Adjudication base SGD 16,000 (RPS benchmark applied). Deductible SGD 1,000, co-pay 5%, co-insurance 10% applied. SGD 12,825 to be credited to DBS ****4567 by 17 Apr 2025 (T+3).",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Ledger commit",
+"detail": "SGD 14,962.50 committed · ref CLM-2025-0001101",
+"status": "pass"
+}
+]
+}
+],
+"final": {
+"status": "APPROVED",
+"amount": 14962.5
+}
+},
+{
+"id": "B002",
+"title": "B002 — Outpatient (Essential Hypertension, GP visit), COMP-HEALTH-SILVER, Spouse Dependent, NON-PANEL GP, APPROVED with reduced payout",
+"meta": {
+"plan": "SILVER",
+"patient": "Lim Kai Xuan",
+"relationship": "spouse",
+"claimType": "Outpatient",
+"billed": 380.0,
+"asks": "outpatient GP reimbursement"
+},
+"documents": [
+{
+"type": "Medical Bill",
+"text": "MEDICAL BILL\nCityMed Family Clinic\nBlock 123 Toa Payoh Central, #01-45, Singapore 310123\nTel: +65 6456 7890 | GST Reg: 200811234K\n\n=============================================\nBILL DATE:       20 April 2025\nPATIENT NAME:    Lim Kai Xuan\nNRIC:            S8867890C\nDATE OF BIRTH:   30 November 1988\nVISIT TYPE:      Outpatient Consultation\nVISIT DATE:      20 April 2025\n=============================================\n\nITEMISED CHARGES\n----------------\nGP Consultation Fee                        SGD     85.00\n  CPT Code: 99213\n\nBlood Pressure Monitoring & ECG            SGD     60.00\n  CPT Code: 93000\n\nBasic Metabolic Panel (Blood Test)         SGD     45.00\n  CPT Code: 80048\n\nAntihypertensive Medications (30-day supply)\n  Amlodipine 5mg x 30 tabs                SGD     90.00\n  Perindopril 4mg x 30 tabs              SGD    100.00\n                                         ____________\nTOTAL BILLED AMOUNT:                     SGD    380.00\n\nATTENDING PHYSICIAN: Dr. Farhan Bin Riza\nPHYSICIAN LICENCE:   MCR-67890F\nPROVIDER REG NO:     PRV-CLIN-07734\n\nNo pre-authorisation required for outpatient consultation.\nPayment received: SGD 380.00 (credit card)\n=============================================\nThank you for visiting CityMed Family Clinic."
+}
+],
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim documents and extracts structured fields",
+"verdict": "Claim parsed: hypertension outpatient",
+"keyNumbers": "SILVER plan · policy HIC-2023-…456",
+"steps": [
+{
+"tag": "AI",
+"label": "Read 1 source document(s)",
+"detail": "Medical Bill",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "Extracted 12 structured fields",
+"detail": "ICD-10 I10 · CPT 99213, 93000, 80048 · billed SGD 380.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Intake completeness check",
+"detail": "all required documents present",
+"status": "pass"
+}
+]
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates",
+"steps": [
+{
+"tag": "RULE",
+"label": "Policy active & in-force",
+"detail": "COMP-HEALTH-SILVER · expires 2025-05-31",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Member / dependent match",
+"detail": "claimant matched on register",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Duplicate-claim check",
+"detail": "no prior paid claim for this incident",
+"status": "pass"
+}
+]
+},
+{
+"name": "Eligibility",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "Eligible — within outpatient limits",
+"keyNumbers": "No waiting-period breach",
+"steps": [
+{
+"tag": "AI",
+"label": "Read plan document → limits & waiting periods",
+"detail": "Outpatient is covered under COMP-HEALTH-SILVER with 30-day waiting period. Policy started 1 Jun 2023; incident 20 Apr 2025 is 689 days later — waiting period sa",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Waiting-period check",
+"detail": "30 days elapsed · basis incident_date",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Annual-limit check",
+"detail": "remaining SGD 4,820.00 of SGD 5,000.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Exclusion-range check",
+"detail": "no exclusion codes triggered",
+"status": "pass"
+}
+]
+},
+{
+"name": "Medical",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "NON-PANEL provider flagged",
+"keyNumbers": "70% reimbursement rate applies",
+"steps": [
+{
+"tag": "RULE",
+"label": "Tool: MOH provider registry",
+"detail": "Not found in MOH accredited panel provider list as of 2025-04-22. CityMed Family Clinic operates as a private clinic without MOH panel accreditation.",
+"status": "fail"
+},
+{
+"tag": "RULE",
+"label": "Tool: SMC physician register",
+"detail": "Dr. Farhan Bin Riza — Active, General Practice, expiry 2027-08-31",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "CPT 99213 clinical review",
+"detail": "CPT 99213 (office/outpatient visit, established patient) is valid and plausible for ICD-10 I10 (Essential hypertension) — standard GP consultation for hypertension management.",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "CPT 93000 clinical review",
+"detail": "CPT 93000 (electrocardiogram, complete) is valid and plausible for ICD-10 I10 — ECG monitoring is standard in hypertension management to assess cardiac impact.",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "CPT 80048 clinical review",
+"detail": "CPT 80048 (basic metabolic panel) is valid and plausible for ICD-10 I10 — metabolic panel monitors renal function and electrolytes in hypertension patients.",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Pre-authorisation check",
+"detail": "pre-auth on file & matched",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Panel status",
+"detail": "NON-PANEL provider — reduced reimbursement rate",
+"status": "pass"
+}
+]
+},
+{
+"name": "Adjudication",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "Zero benefit — base absorbed by deductible",
+"keyNumbers": "Base SGD 133 vs deductible remaining SGD 1,820",
+"steps": [
+{
+"tag": "RULE",
+"label": "Co Pay",
+"detail": "round(0 × 20/100, 2) = 0.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Net Payable",
+"detail": "0.0",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Claimant Liability",
+"detail": "round(380 - 0, 2) = 380.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Conservation Check",
+"detail": "0 + 380 = 380 ✓",
+"status": "pass"
+}
+]
+},
+{
+"name": "Disbursement",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "No disbursement — nothing payable",
+"keyNumbers": "Net SGD 0 · claimant liable SGD 380",
+"steps": [
+{
+"tag": "RULE",
+"label": "Payment-channel validation",
+"detail": "— → —",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Disbursement status",
+"detail": "Zero benefit — SGD 133 adjudication base fully absorbed by remaining annual deductible (SGD 1,820 remaining). Non-panel provider discount applied. No insurer disbursement. Claimant responsible for full SGD 380.",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Ledger commit",
+"detail": "no disbursement — nothing payable",
+"status": "pass"
+}
+]
+}
+],
+"final": {
+"status": "APPROVED",
+"amount": 0.0,
+"note": "Zero benefit: the covered base fell entirely within the member's remaining deductible, so nothing is payable."
+}
+},
+{
+"id": "B003",
+"title": "B003 — Maternity (Normal delivery), COMP-HEALTH-GOLD, Self, REJECTED at Node 3 (Waiting Period Not Met)",
+"meta": {
+"plan": "GOLD",
+"patient": "Priya Subramaniam",
+"relationship": "self",
+"claimType": "Maternity",
+"billed": 8200.0,
+"asks": "maternity delivery payout"
+},
+"documents": [
+{
+"type": "Medical Bill",
+"text": "MEDICAL BILL\nKK Women's and Children's Hospital\n100 Bukit Timah Road, Singapore 229899\nTel: +65 6225 5554 | Reg No: 198901215N\n\n=============================================\nBILL DATE:       20 May 2025\nPATIENT NAME:    Priya Subramaniam\nNRIC:            S9023456D\nDATE OF BIRTH:   18 May 1990\nWARD:            Delivery Suite / Post-Natal Ward, Class B1\nADMISSION DATE:  14 May 2025\nDISCHARGE DATE:  17 May 2025\n=============================================\n\nITEMISED CHARGES\n----------------\nDelivery Suite Charges (Normal Vaginal     SGD  3,500.00\n  Delivery) — CPT Code: 59400\n\nPost-Natal Ward (Class B1 - 3 Nights)     SGD  2,550.00\n  @ SGD 850 per night x 3 nights\n  (14 May, 15 May, 16 May 2025)\n  CPT Code: 99232\n\nPaediatrician Assessment (Newborn)         SGD    250.00\n\nMedications & Consumables                  SGD  1,900.00\n  (IV oxytocin, suture materials, pain\n   management, post-natal supplements)\n\n                                         ____________\nTOTAL BILLED AMOUNT:                     SGD  8,200.00\n\nPRE-AUTHORISATION NO:   PA-2025-550001\nATTENDING PHYSICIAN:    Dr. Kavitha Rajendran\nPHYSICIAN LICENCE:      MCR-31457C\nSPECIALTY:              Obstetrics & Gynaecology\nPROVIDER REGISTRATION:  MOH-HOSP-00273\n\nDiagnosis:  Z37.0 — Single liveborn infant, delivered vaginally\n\nPayment due within 30 days.\n=============================================\nIssued by: KKH Finance Department"
+},
+{
+"type": "Discharge Summary",
+"text": "DISCHARGE SUMMARY\nKK Women's and Children's Hospital\nDepartment of Obstetrics & Gynaecology\n\n=============================================\nPATIENT:         Priya Subramaniam\nNRIC:            S9023456D\nDOB:             18 May 1990\nMRN:             KKH-2025-051422\nADMISSION DATE:  14 May 2025 (02:15)\nDISCHARGE DATE:  17 May 2025 (10:00)\nWARD:            Post-Natal Ward, Class B1\n\nATTENDING PHYSICIAN:\n  Dr. Kavitha Rajendran\n  Specialist in Obstetrics & Gynaecology\n  SMC Licence: MCR-31457C\n  KK Women's and Children's Hospital\n=============================================\n\nPRIMARY DIAGNOSIS:\n  Z37.0 — Single liveborn infant, delivered vaginally\n\nCLINICAL SUMMARY:\n  Priya Subramaniam, a 35-year-old primigravida (G1P0), was admitted\n  at 38 weeks gestation in active labour. She had regular antenatal\n  care. No significant antenatal complications noted.\n\nDELIVERY DETAILS:\n  Mode of Delivery: Normal Vaginal Delivery (SVD)\n  Time of Delivery: 14 May 2025, 05:47\n  Baby: Live female infant, weight 3.12 kg, APGAR 9/10 at 1 min,\n        10/10 at 5 min.\n  Procedure: CPT 59400 — Routine obstetric care including antepartum\n             care, vaginal delivery, and postpartum care.\n\nPOST-NATAL COURSE:\n  Post-natal monitoring (CPT 99232) x 3 days (14–16 May 2025).\n  Mother recovered well. Breastfeeding established.\n  Baby passed newborn screening. Paediatrician assessment completed.\n\nDISCHARGE CONDITION:\n  Mother: Stable, well, no complications.\n  Baby: Healthy, feeding well.\n\nDISCHARGE PLAN:\n  Follow-up with KKH Obstetrics Outpatient Clinic at 6 weeks\n  post-delivery.\n\nPRE-AUTHORISATION:   PA-2025-550001\n\nSigned: Dr. Kavitha Rajendran (MCR-31457C)\nDate:   17 May 2025\n============================================="
+},
+{
+"type": "Pre-Auth Approval",
+"text": "PRE-AUTHORISATION APPROVAL CERTIFICATE\nTPMN Health Insurance — Medical Pre-Authorisation Unit\n10 Marina Boulevard, Singapore 018983\nTel: +65 6123 4567\n\n=============================================\nPRE-AUTHORISATION NUMBER:  PA-2025-550001\nDATE ISSUED:               01 May 2025\nSTATUS:                    APPROVED\n=============================================\n\nPOLICY DETAILS:\n  Policy No:         HIC-2025-00789\n  Plan:              COMP-HEALTH-GOLD\n  Policyholder:      Priya Subramaniam\n\nCLAIMANT DETAILS:\n  Name:              Priya Subramaniam\n  NRIC:              S9023456D\n  Relationship:      Self\n\nCLAIM DETAILS:\n  Claim Type:        Maternity\n  Provider:          KK Women's and Children's Hospital\n  Provider Reg No:   MOH-HOSP-00273\n  Attending Physician: Dr. Kavitha Rajendran (MCR-31457C)\n  Expected Delivery: Approximately 14–18 May 2025\n\nAUTHORISATION:\n  Authorised Amount: SGD 10,000.00 (maximum)\n  Validity:          01 May 2025 to 01 August 2025\n  Expiry Date:       01 August 2025\n\nNOTE:\n  This pre-authorisation is issued based on the information\n  provided. Eligibility and benefit entitlement are subject to\n  policy terms and conditions, including the applicable waiting\n  period for maternity claims. Approval of pre-authorisation does\n  not guarantee claim payment.\n\nAuthorised by: TPMN Pre-Authorisation Unit\nDate: 01 May 2025\n============================================="
+}
+],
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim documents and extracts structured fields",
+"verdict": "Claim parsed: normal delivery maternity",
+"keyNumbers": "GOLD plan · policy HIC-2025-…789",
+"steps": [
+{
+"tag": "AI",
+"label": "Read 3 source document(s)",
+"detail": "Medical Bill, Discharge Summary, Pre-Auth Approval",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "Extracted 12 structured fields",
+"detail": "ICD-10 Z37.0 · CPT 59400, 99232 · billed SGD 8,200.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Intake completeness check",
+"detail": "all required documents present",
+"status": "pass"
+}
+]
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates",
+"steps": [
+{
+"tag": "RULE",
+"label": "Policy active & in-force",
+"detail": "COMP-HEALTH-GOLD · expires 2027-03-09",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Member / dependent match",
+"detail": "claimant matched on register",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Duplicate-claim check",
+"detail": "no prior paid claim for this incident",
+"status": "pass"
+}
+]
+},
+{
+"name": "Eligibility",
+"status": "fail",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "DENIED — maternity waiting period not met",
+"keyNumbers": "65 days elapsed · requested SGD 8,200",
+"steps": [
+{
+"tag": "AI",
+"label": "Read plan document → limits & waiting periods",
+"detail": "Maternity benefit under COMP-HEALTH-GOLD requires a 270-day waiting period from policy inception. Policy started 10 Mar 2025; incident date 14 May 2025 is only ",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Waiting-period check",
+"detail": "270 days elapsed · basis incident_date",
+"status": "fail"
+},
+{
+"tag": "RULE",
+"label": "Annual-limit check",
+"detail": "remaining SGD 0.00 of SGD 0.00",
+"status": "fail"
+},
+{
+"tag": "RULE",
+"label": "Exclusion-range check",
+"detail": "no exclusion codes triggered",
+"status": "pass"
+}
+]
+},
+{
+"name": "Medical",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "",
+"keyNumbers": "",
+"steps": []
+},
+{
+"name": "Adjudication",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "",
+"keyNumbers": "",
+"steps": []
+},
+{
+"name": "Disbursement",
+"status": "skipped",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "",
+"keyNumbers": "",
+"steps": []
+}
+],
+"final": {
+"status": "DENIED",
+"reason": "DENIED — maternity waiting period not met"
+}
+},
+{
+"id": "B004",
+"title": "B004 — Surgical (Appendectomy), COMP-HEALTH-BRONZE, Self, Non-Panel Hospital, APPROVED with 60% non-panel reimbursement",
+"meta": {
+"plan": "BRONZE",
+"patient": "Ahmad Zulkifli bin Hassan",
+"relationship": "self",
+"claimType": "Surgical",
+"billed": 12000.0,
+"asks": "surgical reimbursement"
+},
+"documents": [
+{
+"type": "Medical Bill",
+"text": "MEDICAL BILL\nNovena Surgical and Orthopaedic Centre\n9 Novena Rise, #04-01, Singapore 297992\nTel: +65 6397 2200 | GST Reg: 201834561W\n\n=============================================\nBILL DATE:       05 May 2025\nPATIENT NAME:    Ahmad Zulkifli bin Hassan\nNRIC:            S7534567E\nDATE OF BIRTH:   03 September 1975\nWARD:            Surgical Ward Level 4\nADMISSION DATE:  02 May 2025\nDISCHARGE DATE:  04 May 2025\n=============================================\n\nITEMISED CHARGES\n----------------\nOpen Appendectomy (Emergency)              SGD  8,500.00\n  CPT Code: 44950\n  Procedure date: 02 May 2025\n\nAnaesthesia (General)                      SGD  1,200.00\n  Dr. Melissa Chua (Anaesthetist)\n  Procedure date: 02 May 2025\n\nPost-Surgical Ward (2 Nights)              SGD  1,300.00\n  @ SGD 650 per night x 2 nights\n  (02 May, 03 May 2025)\n  CPT Code: 99232\n\nPost-Operative Medications                 SGD  1,000.00\n  (IV Cefazolin prophylaxis, Tramadol,\n   Omeprazole, wound dressings)\n\n                                         ____________\nTOTAL BILLED AMOUNT:                     SGD 12,000.00\n\n  Less: Patient's direct payment           SGD    200.00\n                                         ____________\nOUTSTANDING (for insurance claim):        SGD 11,800.00\n\nPRE-AUTHORISATION NO:   PA-2025-880001\nATTENDING SURGEON:      Dr. Tan Boon Kiat\nPHYSICIAN LICENCE:      MCR-44012D\nSPECIALTY:              General Surgery\nPROVIDER REGISTRATION:  PRV-HOSP-09921\n\nDIAGNOSIS:  K35.80 — Acute appendicitis without abscess\n\nPayment due within 14 days.\nThis hospital is a private specialist centre and is not on the\nTPMN Health Insurance panel.\n=============================================\nIssued by: Novena Surgical Finance Department"
+},
+{
+"type": "Discharge Summary",
+"text": "DISCHARGE SUMMARY\nNovena Surgical and Orthopaedic Centre\nDepartment of General Surgery\n\n=============================================\nPATIENT:         Ahmad Zulkifli bin Hassan\nNRIC:            S7534567E\nDOB:             03 September 1975\nMRN:             NSOC-2025-050211\nADMISSION DATE:  02 May 2025 (14:30)\nDISCHARGE DATE:  04 May 2025 (11:00)\nWARD:            Surgical Ward, Level 4\n\nATTENDING SURGEON:\n  Dr. Tan Boon Kiat\n  Specialist in General Surgery\n  SMC Licence: MCR-44012D\n  Novena Surgical and Orthopaedic Centre\n=============================================\n\nPRIMARY DIAGNOSIS:\n  K35.80 — Acute appendicitis, other and unspecified,\n            without mention of peritonitis\n\nSYMPTOM ONSET:\n  Patient reported onset of periumbilical pain migrating to the\n  right iliac fossa beginning on 01 May 2025 (approximately\n  18 hours prior to admission).\n  Estimated symptom onset date: 01 May 2025.\n\nHISTORY OF PRESENTING ILLNESS:\n  Ahmad Zulkifli bin Hassan, a 49-year-old male, presented to\n  Novena Surgical and Orthopaedic Centre on 02 May 2025 with\n  progressive right iliac fossa pain, nausea, and low-grade fever\n  (37.8°C). Rebound tenderness positive. Rovsing's sign positive.\n  CT abdomen confirmed non-perforated acute appendicitis.\n\nINVESTIGATIONS:\n  - WBC: 15.8 x10^9/L\n  - CRP: 145 mg/L\n  - CT Abdomen & Pelvis: Appendiceal wall thickening with\n    periappendiceal fat stranding. No free air. No perforation.\n    Findings consistent with acute appendicitis.\n\nPROCEDURE:\n  Open Appendectomy (CPT 44950) performed under general anaesthesia\n  on 02 May 2025. Appendix measuring 9cm, grossly inflamed, no\n  perforation. Specimen sent for histopathology — confirmed acute\n  appendicitis.\n\nPOST-OPERATIVE COURSE:\n  Post-surgical monitoring (CPT 99232) on 02 May and 03 May 2025.\n  Tolerating light diet by Day 2. Ambulating with assistance on Day 1,\n  independently on Day 2. No wound complications.\n\nDISCHARGE CONDITION:\n  Stable. Afebrile. Tolerating oral intake. Wound clean and dry.\n\nDISCHARGE MEDICATIONS:\n  - Amoxicillin-Clavulanate 625mg PO TDS x 5 days\n  - Tramadol 50mg PRN for pain\n  - Wound care instructions provided\n\nFOLLOW-UP:\n  Review at Novena Surgical Clinic in 1 week for wound check and\n  histopathology results.\n\nPRE-AUTHORISATION:   PA-2025-880001\n\nSigned: Dr. Tan Boon Kiat (MCR-44012D)\nDate:   04 May 2025\n============================================="
+},
+{
+"type": "Pre-Auth Approval",
+"text": "PRE-AUTHORISATION APPROVAL CERTIFICATE\nTPMN Health Insurance — Medical Pre-Authorisation Unit\n10 Marina Boulevard, Singapore 018983\nTel: +65 6123 4567\n\n=============================================\nPRE-AUTHORISATION NUMBER:  PA-2025-880001\nDATE ISSUED:               30 April 2025\nSTATUS:                    APPROVED\n=============================================\n\nPOLICY DETAILS:\n  Policy No:         HIC-2022-00321\n  Plan:              COMP-HEALTH-BRONZE\n  Policyholder:      Ahmad Zulkifli bin Hassan\n\nCLAIMANT DETAILS:\n  Name:              Ahmad Zulkifli bin Hassan\n  NRIC:              S7534567E\n  Relationship:      Self\n\nCLAIM DETAILS:\n  Claim Type:        Surgical\n  Provider:          Novena Surgical and Orthopaedic Centre\n  Provider Reg No:   PRV-HOSP-09921\n  Attending Physician: Dr. Tan Boon Kiat (MCR-44012D)\n  Procedure:         Open Appendectomy (CPT 44950)\n  Expected Admission: 02 May 2025\n\nAUTHORISATION:\n  Authorised Amount: SGD 12,000.00 (maximum)\n  Validity:          30 April 2025 to 31 July 2025\n  Expiry Date:       31 July 2025\n\nNOTE:\n  This pre-authorisation covers surgical procedure CPT 44950 at\n  the stated provider. Reimbursement is subject to COMP-HEALTH-\n  BRONZE plan terms, including the non-panel provider clause\n  (reimbursement capped at 60% for non-panel providers).\n\nAuthorised by: TPMN Pre-Authorisation Unit\nDate: 30 April 2025\n============================================="
+}
+],
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim documents and extracts structured fields",
+"verdict": "Claim parsed: appendectomy surgical",
+"keyNumbers": "BRONZE plan · policy HIC-…",
+"steps": [
+{
+"tag": "AI",
+"label": "Read 3 source document(s)",
+"detail": "Medical Bill, Discharge Summary, Pre-Auth Approval",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "Extracted 12 structured fields",
+"detail": "ICD-10 K35.80 · CPT 44950, 99232 · billed SGD 12,000.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Intake completeness check",
+"detail": "all required documents present",
+"status": "pass"
+}
+]
+},
+{
+"name": "Verify",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "Policy active, member verified",
+"keyNumbers": "Claimant matched · no duplicates",
+"steps": [
+{
+"tag": "RULE",
+"label": "Policy active & in-force",
+"detail": "COMP-HEALTH-BRONZE · expires 2025-08-31",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Member / dependent match",
+"detail": "claimant matched on register",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Duplicate-claim check",
+"detail": "no prior paid claim for this incident",
+"status": "pass"
+}
+]
+},
+{
+"name": "Eligibility",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "Eligible — within surgical limits",
+"keyNumbers": "No waiting-period breach",
+"steps": [
+{
+"tag": "AI",
+"label": "Read plan document → limits & waiting periods",
+"detail": "Surgical is covered under COMP-HEALTH-BRONZE with 90-day waiting period. Symptom onset 1 May 2025 is 972 days after policy inception 1 Sep 2022 — waiting period",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Waiting-period check",
+"detail": "90 days elapsed · basis symptom_onset",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Annual-limit check",
+"detail": "remaining SGD 25,000.00 of SGD 25,000.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Exclusion-range check",
+"detail": "no exclusion codes triggered",
+"status": "pass"
+}
+]
+},
+{
+"name": "Medical",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "NON-PANEL provider flagged",
+"keyNumbers": "60% reimbursement rate applies",
+"steps": [
+{
+"tag": "RULE",
+"label": "Tool: MOH provider registry",
+"detail": "Not found in MOH accredited provider list as of 2025-05-10. Novena Surgical and Orthopaedic Centre operates as a private hospital without MOH panel status.",
+"status": "fail"
+},
+{
+"tag": "RULE",
+"label": "Tool: SMC physician register",
+"detail": "Dr. Tan Boon Kiat — Active, General Surgery, expiry 2026-12-31",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "CPT 44950 clinical review",
+"detail": "CPT 44950 (appendectomy) is valid and clinically plausible for ICD-10 K35.80 (acute appendicitis without abscess) — open appendectomy is the standard surgical treatment.",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "CPT 99232 clinical review",
+"detail": "CPT 99232 (subsequent inpatient visit) is valid and plausible for post-surgical inpatient monitoring following appendectomy for K35.80.",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Pre-authorisation check",
+"detail": "pre-auth on file & matched",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Panel status",
+"detail": "NON-PANEL provider — reduced reimbursement rate",
+"status": "pass"
+}
+]
+},
+{
+"name": "Adjudication",
+"status": "pass",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "Adjudicated — deductible + co-pay applied",
+"keyNumbers": "SGD 3,500 deductible · 20% co-pay",
+"steps": [
+{
+"tag": "RULE",
+"label": "Adjudication Base",
+"detail": "5100.0",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Deductible Applied",
+"detail": "3500.0",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Co Pay",
+"detail": "round(1600 × 20/100, 2) = 320.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Co Insurance Applied",
+"detail": "min(256, 2000) = 256.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Net Payable",
+"detail": "round(1280 - 256, 2) = 1024.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Claimant Liability",
+"detail": "round(11800 - 1024, 2) = 10776.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Conservation Check",
+"detail": "1024 + 10776 = 11800 ✓",
+"status": "pass"
+}
+]
+},
+{
+"name": "Disbursement",
+"status": "pass",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "Disbursed — partial reimbursement",
+"keyNumbers": "SGD 1,120.00 · claimant liable SGD 10,680",
+"steps": [
+{
+"tag": "RULE",
+"label": "Payment-channel validation",
+"detail": "provider_direct → Novena Surgical and Orthopaedic Centre (UOB ******9921)",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Disbursement status",
+"detail": "Claim CLM-2025-0001104 approved. Non-panel 60% reimbursement and SGD 3,500 annual deductible applied. Net payable SGD 1,120 disbursed directly to Novena Surgical and Orthopaedic Centre via UOB provider_direct by 15 May 2025 (T+5).",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Ledger commit",
+"detail": "SGD 1,120.00 committed · ref CLM-2025-0001104",
+"status": "pass"
+}
+]
+}
+],
+"final": {
+"status": "APPROVED",
+"amount": 1120.0
+}
+},
+{
+"id": "B005",
+"title": "B005 — Emergency (Closed Radius Fracture from Fall), COMP-HEALTH-GOLD, Self, REJECTED at Node 2 (Duplicate Claim)",
+"meta": {
+"plan": "GOLD",
+"patient": "Chen Mei Ling",
+"relationship": "self",
+"claimType": "Emergency",
+"billed": 2850.0,
+"asks": "emergency fracture payout"
+},
+"documents": [
+{
+"type": "Medical Bill",
+"text": "MEDICAL BILL\nTan Tock Seng Hospital — Emergency Department\n11 Jalan Tan Tock Seng, Singapore 308433\nTel: +65 6256 6011 | Reg No: 198702573N\n\n=============================================\nBILL DATE:       21 April 2025\nPATIENT NAME:    Chen Mei Ling\nNRIC:            S9145678F\nDATE OF BIRTH:   07 December 1991\nVISIT TYPE:      Accident & Emergency (Outpatient)\nVISIT DATE:      21 April 2025\nTIME IN:         14:20\nTIME OUT:        18:45\n=============================================\n\nITEMISED CHARGES\n----------------\nEmergency Consultation & Assessment        SGD    180.00\n  (Triage Category P2 — Urgent)\n\nX-Ray Right Wrist (2 views)                SGD     95.00\n  CPT Code: 73100\n  Date: 21 April 2025\n\nClosed Reduction, Right Distal            SGD  1,800.00\n  Radius Fracture (under IV sedation)\n  CPT Code: 25600\n  Date: 21 April 2025\n\nPlaster Splint Application                 SGD    350.00\n  (Dorsal wrist splint, below elbow)\n\nAnalgesics & Medications                   SGD    425.00\n  (Tramadol 50mg IV, Ketorolac,\n   Paracetamol, Ondansetron)\n\n                                         ____________\nTOTAL BILLED AMOUNT:                     SGD  2,850.00\n\nATTENDING PHYSICIAN:    Dr. Lim Ah Kow\nPHYSICIAN LICENCE:      MCR-55678E\nSPECIALTY:              Emergency Medicine\nPROVIDER REGISTRATION:  MOH-HOSP-00391\n\nDIAGNOSIS:  S52.501A — Unspecified fracture of the lower end of\n            right radius, initial encounter for closed fracture\n            (ICD-10 S52.501A)\n\nSYMPTOM ONSET:  21 April 2025 (fall incident same day)\n\nPre-authorisation is not required for emergency claims.\nPayment due within 30 days.\n=============================================\nNOTE: A claim for this visit (incident date 21 April 2025, \nemergency claim) was previously submitted and processed as\nCLM-2025-0000877. Please do not resubmit.\n=============================================\nIssued by: TTSH Finance Department"
+}
+],
+"stages": [
+{
+"name": "Intake",
+"status": "pass",
+"llm": true,
+"capability": "Nemotron agent reads the claim documents and extracts structured fields",
+"verdict": "Claim parsed: fracture emergency",
+"keyNumbers": "GOLD plan · policy HIC-2024-…099",
+"steps": [
+{
+"tag": "AI",
+"label": "Read 1 source document(s)",
+"detail": "Medical Bill",
+"status": "pass"
+},
+{
+"tag": "AI",
+"label": "Extracted 12 structured fields",
+"detail": "ICD-10 S52.501A · CPT 25600, 73100 · billed SGD 2,850.00",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Intake completeness check",
+"detail": "all required documents present",
+"status": "pass"
+}
+]
+},
+{
+"name": "Verify",
+"status": "fail",
+"llm": false,
+"capability": "Deterministic policy & member validation against the ledger",
+"verdict": "DENIED — duplicate of an already-paid claim",
+"keyNumbers": "Existing paid claim CLM-2025-0000877",
+"steps": [
+{
+"tag": "RULE",
+"label": "Policy active & in-force",
+"detail": "COMP-HEALTH-GOLD · expires 2026-03-31",
+"status": "fail"
+},
+{
+"tag": "RULE",
+"label": "Member / dependent match",
+"detail": "claimant matched on register",
+"status": "pass"
+},
+{
+"tag": "RULE",
+"label": "Duplicate-claim check",
+"detail": "DUPLICATE_CLAIM",
+"status": "fail"
+}
+]
+},
+{
+"name": "Eligibility",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek reads the plan document, extracts limits & waiting periods",
+"verdict": "",
+"keyNumbers": "",
+"steps": []
+},
+{
+"name": "Medical",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
+"verdict": "",
+"keyNumbers": "",
+"steps": []
+},
+{
+"name": "Adjudication",
+"status": "skipped",
+"llm": true,
+"capability": "DeepSeek computes deductible, co-pay & co-insurance to net payable",
+"verdict": "",
+"keyNumbers": "",
+"steps": []
+},
+{
+"name": "Disbursement",
+"status": "skipped",
+"llm": false,
+"capability": "Deterministic payment-channel validation & ledger commit",
+"verdict": "",
+"keyNumbers": "",
+"steps": []
+}
+],
+"final": {
+"status": "DENIED",
+"reason": "DENIED — duplicate of an already-paid claim"
+}
+}
+]
 </script>
 <script id="demo-app">
 const DATA = JSON.parse(document.getElementById("demo-data").textContent);
