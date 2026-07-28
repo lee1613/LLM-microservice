@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-"""Distill the 5 golden claim contracts into display-only demo data.
+"""Distill the 5 golden claim contracts + real source documents into
+display-only demo data for the two-act console (v3).
 
-Reads each stage's structured `_output` (NEVER the stale top-level `_outcome`
-blurb) and COMPUTES per-node status + the final banner. Curated display copy
-(capability / verdict / keyNumbers) is layered on top. Money-path figures are
-asserted against known-good constants so the demo can never drift from the
-contracts.
+Reads each stage's authoritative `_output` (NEVER the stale top-level
+`_outcome` blurb) for status/verdict, the real `documents/{BXXX}/*.txt`
+for the Act-1 doc tabs, and the stage-level / top-level trace sub-dicts
+(`_validation`, `_document_extraction`, `_registry_lookups`,
+`_coding_assessment`, `_arithmetic_verify`, …) for the per-node steps.
+Every value traces back to the contracts — no fabrication.
 
-Run standalone to print the JSON and self-check:  python demo/build_demo_data.py
+Run standalone to build, self-check, and inject:
+    python demo/build_demo_data.py
 """
 import json
 import os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(
-    HERE, "..", "data", "health-insurance-claim", "synthetic data"
-)
+DATA_DIR = os.path.join(HERE, "..", "data", "health-insurance-claim", "synthetic data")
+DOCS_DIR = os.path.join(DATA_DIR, "documents")
 
 SCENARIOS = ["B001", "B002", "B003", "B004", "B005"]
 
@@ -27,17 +29,19 @@ STAGE_KEYS = [
     "stage_5_adjudication",
     "stage_6_disbursement",
 ]
+NODE_NAMES = ["Intake", "Verify", "Eligibility", "Medical", "Adjudication", "Disbursement"]
+LLM_NODES = {1, 3, 4, 5}  # 1-indexed; drives shimmer timing
 
-NODE_NAMES = [
-    "Intake", "Verify", "Eligibility", "Medical", "Adjudication", "Disbursement",
+# Real source documents, in the order they should appear as Act-1 tabs.
+DOC_ORDER = [
+    ("medical_bill.txt", "Medical Bill"),
+    ("discharge_summary.txt", "Discharge Summary"),
+    ("pre_auth_approval.txt", "Pre-Auth Approval"),
 ]
-
-# Which nodes are LLM-driven (agentic) vs deterministic. Drives animation.
-LLM_NODES = {1, 3, 4, 5}  # 1-indexed
 
 # Static per-node capability line (shared across scenarios).
 CAPABILITIES = {
-    1: "Nemotron agent reads the claim PDF and extracts structured fields",
+    1: "Nemotron agent reads the claim documents and extracts structured fields",
     2: "Deterministic policy & member validation against the ledger",
     3: "DeepSeek reads the plan document, extracts limits & waiting periods",
     4: "DeepSeek agent cross-references ICD-10/CPT codes, provider & physician registries",
@@ -45,9 +49,7 @@ CAPABILITIES = {
     6: "Deterministic payment-channel validation & ledger commit",
 }
 
-# Curated per-scenario, per-node display copy: {node_index: (verdict, keyNumbers)}.
-# Only nodes that actually ran need entries; skipped nodes are omitted.
-# keyNumbers are drawn from the contracts' real values.
+# Curated per-scenario, per-node (verdict, keyNumbers). Only ran nodes need entries.
 SCENARIO_COPY = {
     "B001": {
         1: ("Claim parsed: pneumonia hospitalisation", "GOLD plan · policy HIC-2025-…1101"),
@@ -84,6 +86,15 @@ SCENARIO_COPY = {
     },
 }
 
+# One-line curated "what the claimant asks" per scenario (Act-1 overview).
+ASKS = {
+    "B001": "full hospitalisation payout",
+    "B002": "outpatient GP reimbursement",
+    "B003": "maternity delivery payout",
+    "B004": "surgical reimbursement",
+    "B005": "emergency fracture payout",
+}
+
 # Known-good money-path constants. The build asserts computed values match.
 EXPECTED = {
     "B001": {"status": "APPROVED", "amount": 14962.50, "halt_node": None},
@@ -106,21 +117,58 @@ def _ran(stage_dict):
     return isinstance(out, dict) and len(out) > 0
 
 
+def _load_documents(scenario):
+    """Read the real source .txt documents present for this scenario, in
+    DOC_ORDER. Returns list[{type, text}]. Only files that exist are included."""
+    folder = os.path.join(DOCS_DIR, scenario)
+    docs = []
+    for fname, label in DOC_ORDER:
+        path = os.path.join(folder, fname)
+        if os.path.exists(path):
+            with open(path, encoding="utf-8") as fh:
+                docs.append({"type": label, "text": fh.read().strip()})
+    return docs
+
+
+def _plan_from_title(title):
+    """Extract the plan tier (GOLD/SILVER/BRONZE) from the scenario title."""
+    for tier in ("GOLD", "SILVER", "BRONZE"):
+        if tier in title.upper():
+            return tier
+    return "—"
+
+
+def _meta(scenario, contract):
+    """Act-1 overview summary, derived from real contract fields."""
+    s1 = contract["stage_1_intake"]["_output"]
+    ext = contract["stage_1_intake"].get("_document_extraction", {})
+    billed = ext.get("total_billed_amount", s1.get("claim_amount_requested", 0.0))
+    return {
+        "plan": _plan_from_title(contract.get("_scenario", "")),
+        "patient": s1.get("claimant_name", "—"),
+        "relationship": s1.get("claimant_relationship", "—"),
+        "claimType": str(s1.get("claim_type", "—")).replace("_", " ").title(),
+        "billed": float(billed),
+        "asks": ASKS.get(scenario, ""),
+    }
+
+
+def _steps_for(node, scenario, contract):
+    """Distill node's real trace sub-dicts into tagged steps. Filled in Task 2."""
+    return []  # stub — Task 2 replaces this
+
+
 def distill(scenario):
     contract = _load(scenario)
-    ran = [_ran(contract.get(k, {})) for k in STAGE_KEYS]  # list[bool], index 0..5
+    ran = [_ran(contract.get(k, {})) for k in STAGE_KEYS]
 
-    # Reached node 6 (disbursement ran) => APPROVED. Else DENIED at last ran node.
     reached_end = ran[5]
     if reached_end:
-        status = "APPROVED"
-        halt_node = None
+        status, halt_node = "APPROVED", None
         amount = float(contract["stage_6_disbursement"]["_output"].get("net_payable", 0.0))
     else:
         status = "DENIED"
-        # halt node = last stage that ran (its _output carries the failure verdict)
-        halt_idx = max(i for i, r in enumerate(ran) if r)
-        halt_node = halt_idx + 1  # 1-indexed
+        halt_node = max(i for i, r in enumerate(ran) if r) + 1
         amount = None
 
     stages = []
@@ -138,26 +186,28 @@ def distill(scenario):
             "status": node_status,
             "llm": node in LLM_NODES,
             "capability": CAPABILITIES[node],
+            "verdict": copy.get(node, ("", ""))[0],
+            "keyNumbers": copy.get(node, ("", ""))[1],
+            "steps": [] if node_status == "skipped" else _steps_for(node, scenario, contract),
         }
-        if node in copy:
-            entry["verdict"], entry["keyNumbers"] = copy[node]
         stages.append(entry)
 
     final = {"status": status}
     if status == "APPROVED":
         final["amount"] = amount
-        # B002 zero-benefit note
         if amount == 0.0:
             final["note"] = (
                 "Zero benefit: the covered base fell entirely within the "
                 "member's remaining deductible, so nothing is payable."
             )
     else:
-        final["reason"] = copy[halt_node][0]  # the fail node's verdict text
+        final["reason"] = copy[halt_node][0]
 
     return {
         "id": scenario,
         "title": contract.get("_scenario", scenario),
+        "meta": _meta(scenario, contract),
+        "documents": _load_documents(scenario),
         "stages": stages,
         "final": final,
     }
@@ -179,12 +229,12 @@ def _self_check(data):
             assert got == exp["amount"], f"{sid}: amount {got} != {exp['amount']}"
         if exp["halt_node"] is not None:
             fails = [i + 1 for i, s in enumerate(d["stages"]) if s["status"] == "fail"]
-            assert fails == [exp["halt_node"]], (
-                f"{sid}: fail node {fails} != [{exp['halt_node']}]"
-            )
-    # B002 must be APPROVED with a zero-benefit note (the grilled decision).
+            assert fails == [exp["halt_node"]], f"{sid}: fail node {fails} != [{exp['halt_node']}]"
+        # Act-1 documents present.
+        assert len(d["documents"]) >= 1, f"{sid}: no documents loaded"
+        assert d["meta"]["billed"] > 0, f"{sid}: billed amount not derived"
     assert by_id["B002"]["final"].get("note"), "B002 missing zero-benefit note"
-    print(f"OK: {len(data)} scenarios distilled, all money-path asserts passed.")
+    print(f"OK: {len(data)} scenarios distilled, docs + money-path asserts passed.")
 
 
 INDEX_HTML = os.path.join(HERE, "index.html")
@@ -208,4 +258,4 @@ def inject(data):
 if __name__ == "__main__":
     data = build_all()
     _self_check(data)
-    inject(data)
+    # inject(data)  # enabled in Task 4 once index.html has the marked region
