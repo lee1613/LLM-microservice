@@ -153,9 +153,164 @@ def _meta(scenario, contract):
     }
 
 
+def _step(tag, label, detail, status="pass"):
+    return {"tag": tag, "label": label, "detail": str(detail), "status": status}
+
+
+def _scenario_of(contract):
+    """Recover the scenario id from a loaded contract (for doc lookup)."""
+    t = contract.get("_scenario", "")
+    for sid in SCENARIOS:
+        if sid in t:
+            return sid
+    return SCENARIOS[0]
+
+
+def _steps_intake(c):
+    s1 = c["stage_1_intake"]
+    ext = s1.get("_document_extraction", {})
+    out = s1.get("_output", {})
+    steps = []
+    doc_types = [d["type"] for d in _load_documents(_scenario_of(c))]
+    steps.append(_step("AI", f"Read {len(doc_types)} source document(s)",
+                       ", ".join(doc_types)))
+    icd = ext.get("primary_diagnosis_icd10", "—")
+    cpt = ", ".join(ext.get("procedure_cpt_codes", [])) or "—"
+    nfields = len(ext)
+    billed = ext.get("total_billed_amount", out.get("claim_amount_requested", 0))
+    steps.append(_step("AI", f"Extracted {nfields} structured fields",
+                       f"ICD-10 {icd} · CPT {cpt} · billed SGD {billed:,.2f}"))
+    accepted = out.get("intake_accepted", True)
+    steps.append(_step("RULE", "Intake completeness check",
+                       "all required documents present" if accepted
+                       else out.get("rejection_reason", "incomplete"),
+                       "pass" if accepted else "fail"))
+    return steps
+
+
+def _steps_verify(c, failed):
+    out = c["stage_2_policy_verification"].get("_output", {})
+    steps = [
+        _step("RULE", "Policy active & in-force",
+              f"{out.get('policy_product_code', '—')} · expires "
+              f"{out.get('policy_expiry_date', '—')}",
+              "pass" if out.get("policy_verified", True) else "fail"),
+        _step("RULE", "Member / dependent match",
+              "claimant matched on register"
+              if out.get("dependent_verified", True) else "mismatch",
+              "pass" if out.get("dependent_verified", True) else "fail"),
+    ]
+    fail_reason = out.get("verification_failure")
+    steps.append(_step("RULE", "Duplicate-claim check",
+                       fail_reason or "no prior paid claim for this incident",
+                       "fail" if fail_reason else "pass"))
+    return steps
+
+
+def _steps_eligibility(c, failed):
+    out = c["stage_3_eligibility_check"].get("_output", {})
+    steps = [
+        _step("AI", "Read plan document → limits & waiting periods",
+              (out.get("eligibility_rationale") or "plan terms interpreted")[:160]),
+    ]
+    wp_ok = out.get("waiting_period_satisfied", True)
+    steps.append(_step("RULE", "Waiting-period check",
+                       f"{out.get('waiting_period_days', '—')} days elapsed · "
+                       f"basis {out.get('waiting_period_basis', '—')}",
+                       "pass" if wp_ok else "fail"))
+    steps.append(_step("RULE", "Annual-limit check",
+                       f"remaining SGD {out.get('annual_limit_remaining', 0):,.2f} of "
+                       f"SGD {out.get('annual_limit', 0):,.2f}",
+                       "pass" if out.get("annual_limit_remaining", 1) > 0 else "fail"))
+    excl = out.get("exclusions_triggered", [])
+    steps.append(_step("RULE", "Exclusion-range check",
+                       "no exclusion codes triggered" if not excl else f"triggered: {excl}",
+                       "pass" if not excl else "fail"))
+    return steps
+
+
+def _steps_medical(c, failed):
+    st = c["stage_4_medical_review"]
+    out = st.get("_output", {})
+    reg = st.get("_registry_lookups", {})
+    coding = st.get("_coding_assessment", []) or out.get("coding_assessment", [])
+    steps = []
+    prov = reg.get("provider_accreditation", {})
+    if prov:
+        steps.append(_step("RULE", "Tool: MOH provider registry",
+                           prov.get("result", "—"),
+                           "pass" if not prov.get("non_panel_flag") else "fail"))
+    phys = reg.get("physician_licence", {})
+    if phys:
+        steps.append(_step("RULE", "Tool: SMC physician register",
+                           phys.get("result", "—")))
+    for item in coding:
+        ok = item.get("valid") and item.get("plausible")
+        steps.append(_step("AI", f"CPT {item.get('cpt_code', '—')} clinical review",
+                           item.get("reasoning", "—"),
+                           "pass" if ok else "fail"))
+    if "pre_auth_verified" in out:
+        steps.append(_step("RULE", "Pre-authorisation check",
+                           "pre-auth on file & matched"
+                           if out.get("pre_auth_verified") else "no valid pre-auth",
+                           "pass" if out.get("pre_auth_verified") else "fail"))
+    if out.get("non_panel_flag"):
+        steps.append(_step("RULE", "Panel status",
+                           "NON-PANEL provider — reduced reimbursement rate", "pass"))
+    return steps or [_step("AI", "Medical review", out.get("medical_review_notes", "—"))]
+
+
+def _steps_adjudication(c, failed):
+    av = c.get("_arithmetic_verify", {})
+    out = c["stage_5_adjudication"].get("_output", {})
+    # Prefer the real formula strings; each line is deterministic math → RULE.
+    keys = ["adjudication_base", "deductible_applied", "co_pay",
+            "co_insurance_applied", "net_payable", "claimant_liability",
+            "conservation_check"]
+    steps = [_step("RULE", k.replace("_", " ").title(), av[k])
+             for k in keys if k in av]
+    if not steps:  # fallback to _output numbers
+        steps = [
+            _step("RULE", "Net payable", f"SGD {out.get('net_payable', 0):,.2f}"),
+            _step("RULE", "Claimant liability",
+                  f"SGD {out.get('claimant_liability', 0):,.2f}"),
+        ]
+    return steps
+
+
+def _steps_disbursement(c, failed):
+    out = c["stage_6_disbursement"].get("_output", {})
+    net = out.get("net_payable", 0.0)
+    steps = [
+        _step("RULE", "Payment-channel validation",
+              f"{out.get('payment_mode', '—')} → {out.get('payee_name', '—')}"),
+        _step("RULE", "Disbursement status",
+              out.get("remarks", out.get("disbursement_status", "—")), "pass"),
+    ]
+    if net == 0.0:
+        steps.append(_step("RULE", "Ledger commit",
+                           "no disbursement — nothing payable", "pass"))
+    else:
+        steps.append(_step("RULE", "Ledger commit",
+                           f"SGD {net:,.2f} committed · ref "
+                           f"{out.get('claim_reference_no', '—')}", "pass"))
+    return steps
+
+
+_DISPATCH = {
+    1: lambda c, f: _steps_intake(c),
+    2: _steps_verify,
+    3: _steps_eligibility,
+    4: _steps_medical,
+    5: _steps_adjudication,
+    6: _steps_disbursement,
+}
+
+
 def _steps_for(node, scenario, contract):
-    """Distill node's real trace sub-dicts into tagged steps. Filled in Task 2."""
-    return []  # stub — Task 2 replaces this
+    """Distill node's real trace into tagged steps; failed flag marks the halt node."""
+    failed = (EXPECTED[scenario]["halt_node"] == node)
+    return _DISPATCH[node](contract, failed)
 
 
 def distill(scenario):
@@ -233,6 +388,15 @@ def _self_check(data):
         # Act-1 documents present.
         assert len(d["documents"]) >= 1, f"{sid}: no documents loaded"
         assert d["meta"]["billed"] > 0, f"{sid}: billed amount not derived"
+        # v3: ran nodes must carry tagged steps.
+        for i, s in enumerate(d["stages"]):
+            if s["status"] in ("pass", "fail"):
+                assert len(s["steps"]) >= 1, f"{sid}: node {i+1} has no steps"
+                for st in s["steps"]:
+                    assert st["tag"] in ("AI", "RULE"), f"{sid} n{i+1}: bad tag {st['tag']}"
+                    assert st["status"] in ("pass", "fail"), f"{sid} n{i+1}: bad step status"
+            else:
+                assert s["steps"] == [], f"{sid}: skipped node {i+1} has steps"
     assert by_id["B002"]["final"].get("note"), "B002 missing zero-benefit note"
     print(f"OK: {len(data)} scenarios distilled, docs + money-path asserts passed.")
 
