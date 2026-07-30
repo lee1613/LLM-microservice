@@ -1,7 +1,9 @@
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import date, datetime
-from app.intake.schemas import DocumentSummary, ClaimType
+
+from pydantic import BaseModel
+
+from app.intake.schemas import ClaimType, DocumentSummary
+
 
 class CptCodeAssessment(BaseModel):
     cpt_code: str
@@ -34,16 +36,16 @@ class MedicalReviewOutput(BaseModel):
     provider_registration: str
     document_summary: DocumentSummary
     medical_review_passed: bool
-    review_failure_reason: Optional[str] = None
+    review_failure_reason: str | None = None
     non_panel_flag: bool
     accreditation_claim: str
     physician_licence_claim: str
-    coding_assessment: List[CptCodeAssessment]
+    coding_assessment: list[CptCodeAssessment]
     pre_auth_verified: bool
-    length_of_stay: Optional[int] = None
+    length_of_stay: int | None = None
     rps_benchmark: float
     bill_variance_pct: float
     medical_necessity_confirmed: bool
-    medical_flags: List[str]
+    medical_flags: list[str]
     medical_review_notes: str
     review_timestamp: datetime

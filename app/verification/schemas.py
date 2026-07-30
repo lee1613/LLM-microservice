@@ -1,8 +1,15 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import date, datetime
-from app.intake.schemas import DocumentSummary, ClaimType, IdDocumentType, ClaimantRelationship
 from enum import Enum
+
+from pydantic import BaseModel
+
+from app.intake.schemas import (
+    ClaimantRelationship,
+    ClaimType,
+    DocumentSummary,
+    IdDocumentType,
+)
+
 
 class PremiumPaymentMode(str, Enum):
     monthly = "monthly"
@@ -39,7 +46,7 @@ class PolicyVerificationOutput(BaseModel):
     provider_registration: str
     document_summary: DocumentSummary
     policy_verified: bool
-    verification_failure: Optional[str] = None
+    verification_failure: str | None = None
     policy_start_date: date
     policy_expiry_date: date
     policy_product_code: str

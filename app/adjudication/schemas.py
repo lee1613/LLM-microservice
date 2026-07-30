@@ -1,7 +1,8 @@
-from pydantic import BaseModel
-from typing import List
 from datetime import date, datetime
 from enum import Enum
+
+from pydantic import BaseModel
+
 from app.intake.schemas import ClaimType
 
 
@@ -23,7 +24,7 @@ class AdjudicationInput(BaseModel):
     non_panel_flag: bool
     policy_product_code: str
     provider_registration: str   # passthrough → Node 6
-    medical_flags: List[str]
+    medical_flags: list[str]
     medical_review_notes: str
 
 

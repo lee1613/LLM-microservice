@@ -6,10 +6,11 @@ Node 4 tools — four distinct tool groups:
   3. RPS schedule query (database.db) — benchmark pricing
   4. Pre-authorisations DB query (database.db) — pre-auth validation
 """
-import sqlite3
 import os
+import sqlite3
+from typing import Any
+
 import requests
-from typing import Optional, Dict, Any, List
 
 REGISTRY_DB = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'registry.db')
 DB_PATH     = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
@@ -19,7 +20,7 @@ CPT_DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'cpt_r
 # GROUP 1 — MCP-simulated: Provider & Physician registry tools
 # ─────────────────────────────────────────────────────────────────────────────
 
-def mcp_lookup_provider(provider_registration: str) -> Optional[Dict[str, Any]]:
+def mcp_lookup_provider(provider_registration: str) -> dict[str, Any] | None:
     """
     [MCP Tool] Queries the external MOH accredited provider registry
     (simulated via registry.db) using the provider's registration number.
@@ -35,7 +36,7 @@ def mcp_lookup_provider(provider_registration: str) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 
-def mcp_lookup_physician(physician_license_no: str) -> Optional[Dict[str, Any]]:
+def mcp_lookup_physician(physician_license_no: str) -> dict[str, Any] | None:
     """
     [MCP Tool] Queries the external Singapore Medical Council (SMC) physician
     licence registry (simulated via registry.db) using the MCR licence number.
@@ -55,7 +56,7 @@ def mcp_lookup_physician(physician_license_no: str) -> Optional[Dict[str, Any]]:
 # GROUP 2 — NLM Clinical Tables API — live ICD-10 lookup
 # ─────────────────────────────────────────────────────────────────────────────
 
-def nlm_validate_icd10(code: str) -> Dict[str, Any]:
+def nlm_validate_icd10(code: str) -> dict[str, Any]:
     """
     Queries the NLM Clinical Tables ICD-10-CM search API to validate an ICD-10 code.
     Returns {valid: bool, description: str, source: str}
@@ -81,7 +82,7 @@ def nlm_validate_icd10(code: str) -> Dict[str, Any]:
 # GROUP 3 — RPS schedule benchmark query
 # ─────────────────────────────────────────────────────────────────────────────
 
-def get_rps_benchmark(cpt_codes: List[str], provider_type: str, setting: str) -> Dict[str, float]:
+def get_rps_benchmark(cpt_codes: list[str], provider_type: str, setting: str) -> dict[str, float]:
     """
     Queries rps_schedule for each CPT code to sum the benchmark price.
     Returns {cpt_code: unit_price, ..., "__total__": total}
@@ -111,7 +112,7 @@ def get_rps_benchmark(cpt_codes: List[str], provider_type: str, setting: str) ->
 # GROUP 2b — CMS PFS CPT Reference lookup (authoritative code validity)
 # ─────────────────────────────────────────────────────────────────────────────
 
-def lookup_cpt_code(code: str) -> Dict[str, Any]:
+def lookup_cpt_code(code: str) -> dict[str, Any]:
     """
     Looks up a CPT/HCPCS code in the local CMS Physician Fee Schedule reference
     database (built from CMS 2024/2025 PFS RVU data). Returns whether the code
@@ -144,7 +145,7 @@ def lookup_cpt_code(code: str) -> Dict[str, Any]:
         }
 
 
-def get_pre_authorisation(pre_auth_no: str) -> Optional[Dict[str, Any]]:
+def get_pre_authorisation(pre_auth_no: str) -> dict[str, Any] | None:
     """Queries pre_authorisations table for a given pre-auth number."""
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row

@@ -1,8 +1,10 @@
 import json
 import re
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 from openai import OpenAI
+
 
 def call_llm_raw_with_retry(
     client: OpenAI,
@@ -34,11 +36,11 @@ def call_llm_raw_with_retry(
 def call_llm_with_json_retry(
     client: OpenAI,
     model: str,
-    messages: List[Dict[str, Any]],
-    tools: Optional[List[Dict[str, Any]]] = None,
-    tool_choice: Optional[str] = None,
+    messages: list[dict[str, Any]],
+    tools: list[dict[str, Any]] | None = None,
+    tool_choice: str | None = None,
     max_retries: int = 3
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Calls the LLM and guarantees a JSON response using response_format and a reflection loop.
     Handles JSONDecodeError by feeding the error back to the LLM.

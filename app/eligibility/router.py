@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import ValidationError
-from app.eligibility.schemas import EligibilityCheckInput, EligibilityCheckOutput
+
 from app.eligibility.agent import process_eligibility
+from app.eligibility.schemas import EligibilityCheckInput, EligibilityCheckOutput
 
 router = APIRouter(prefix="/eligibility", tags=["Eligibility Check"])
 

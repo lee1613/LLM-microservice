@@ -1,13 +1,20 @@
-import re
 import os
+import re
 from datetime import datetime, timezone
-from openai import OpenAI
+
 from dotenv import load_dotenv
+from openai import OpenAI
 
 from app.eligibility.schemas import (
-    EligibilityCheckInput, EligibilityCheckOutput, WaitingPeriodBasis
+    EligibilityCheckInput,
+    EligibilityCheckOutput,
+    WaitingPeriodBasis,
 )
-from app.eligibility.tools import get_plan_document, get_annual_utilised, get_lifetime_utilised
+from app.eligibility.tools import (
+    get_annual_utilised,
+    get_lifetime_utilised,
+    get_plan_document,
+)
 
 load_dotenv()
 client = OpenAI(

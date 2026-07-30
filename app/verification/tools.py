@@ -1,7 +1,7 @@
-import sqlite3
 import os
+import sqlite3
 from datetime import date
-from typing import Optional, Dict, Any
+from typing import Any
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
 
@@ -10,7 +10,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def get_policy(policy_no: str) -> Optional[Dict[str, Any]]:
+def get_policy(policy_no: str) -> dict[str, Any] | None:
     """Tool: Query the policies table using policy_no."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -24,7 +24,7 @@ def get_policy(policy_no: str) -> Optional[Dict[str, Any]]:
     conn.close()
     return dict(row) if row else None
 
-def get_policy_member(policy_no: str, id_document_type: str, id_document_no: str) -> Optional[Dict[str, Any]]:
+def get_policy_member(policy_no: str, id_document_type: str, id_document_no: str) -> dict[str, Any] | None:
     """Tool: Query the policy_members table to confirm claimant identity."""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -50,7 +50,7 @@ def get_premium_arrears_count(policy_no: str, incident_date: date) -> int:
     conn.close()
     return row['arrears_count']
 
-def get_dependent_coverage_end_date(policy_no: str, member_id: str) -> Optional[str]:
+def get_dependent_coverage_end_date(policy_no: str, member_id: str) -> str | None:
     """Tool: Check dependent coverage end date."""
     conn = get_db_connection()
     cursor = conn.cursor()

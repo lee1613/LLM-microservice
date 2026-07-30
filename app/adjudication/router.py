@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from app.adjudication.schemas import AdjudicationInput, AdjudicationOutput
+
 from app.adjudication.agent import process_adjudication
+from app.adjudication.schemas import AdjudicationInput, AdjudicationOutput
 
 router = APIRouter(prefix="/adjudication", tags=["Adjudication"])
 

@@ -1,6 +1,7 @@
-from fastapi import APIRouter
-import sqlite3
 import os
+import sqlite3
+
+from fastapi import APIRouter
 
 router = APIRouter(prefix="/dev", tags=["dev"])
 

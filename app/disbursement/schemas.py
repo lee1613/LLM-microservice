@@ -1,7 +1,8 @@
-from pydantic import BaseModel
-from typing import Optional
 from datetime import date, datetime
 from enum import Enum
+
+from pydantic import BaseModel
+
 from app.intake.schemas import ClaimType
 
 
@@ -20,9 +21,9 @@ class DisbursementStatus(str, Enum):
 class PaymentDetails(BaseModel):
     payment_mode:     PaymentMode
     payee_name:       str
-    bank_name:        Optional[str] = None
-    bank_account_no:  Optional[str] = None
-    bank_branch_code: Optional[str] = None
+    bank_name:        str | None = None
+    bank_account_no:  str | None = None
+    bank_branch_code: str | None = None
 
 
 class DisbursementInput(BaseModel):

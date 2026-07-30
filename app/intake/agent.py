@@ -1,12 +1,20 @@
+import math
 import re
 import uuid
-import math
-from app.intake.schemas import ClaimIntakeInput, ClaimIntakeOutput, DocumentSummary, IdDocumentType, ClaimType
-from app.intake.tools import (
-    query_policy_existence, 
-    get_server_timestamp, 
-    extract_document_summary
+
+from app.intake.schemas import (
+    ClaimIntakeInput,
+    ClaimIntakeOutput,
+    ClaimType,
+    DocumentSummary,
+    IdDocumentType,
 )
+from app.intake.tools import (
+    extract_document_summary,
+    get_server_timestamp,
+    query_policy_existence,
+)
+
 
 def process_claim_intake(input_data: ClaimIntakeInput) -> ClaimIntakeOutput:
     rejection_reason = None

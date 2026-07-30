@@ -1,14 +1,14 @@
-from fastapi import APIRouter, HTTPException
-from typing import Optional
 import json
 
-from app.medical.schemas import MedicalReviewInput, MedicalReviewOutput
+from fastapi import APIRouter, HTTPException
+
 from app.medical.agent import process_medical_review
+from app.medical.schemas import MedicalReviewInput, MedicalReviewOutput
 
 router = APIRouter(prefix="/medical", tags=["Medical Review"])
 
 @router.post("/process", response_model=MedicalReviewOutput)
-def process_claim_medical(input_data: Optional[MedicalReviewInput] = None, raw_text: Optional[str] = None):
+def process_claim_medical(input_data: MedicalReviewInput | None = None, raw_text: str | None = None):
     # Support both JSON body and raw_text string
     if raw_text:
         try:

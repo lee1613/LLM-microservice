@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field
 from datetime import date, datetime
-from typing import List, Optional
 from enum import Enum
+
+from pydantic import BaseModel, Field
+
 
 class ClaimantRelationship(str, Enum):
     self = "self"
@@ -39,8 +40,8 @@ class ClaimIntakeInput(BaseModel):
     claim_date: date
     claim_type: ClaimType
     claim_amount_requested: float
-    supporting_documents: List[str]
-    scanned_files: List[str]
+    supporting_documents: list[str]
+    scanned_files: list[str]
     provider_name: str
     provider_registration: str
 
@@ -50,19 +51,19 @@ class ItemisedCharge(BaseModel):
     unit_price: float
 
 class DocumentSummary(BaseModel):
-    total_billed_amount: Optional[float] = None
-    itemised_charges: List[ItemisedCharge] = Field(default_factory=list)
-    primary_diagnosis_icd10: Optional[str] = None
-    procedure_cpt_codes: List[str] = Field(default_factory=list)
-    symptom_onset_date: Optional[date] = None
-    admission_date: Optional[date] = None
-    discharge_date: Optional[date] = None
-    attending_physician: Optional[str] = None
-    physician_license_no: Optional[str] = None
-    pre_authorisation_no: Optional[str] = None
-    provider_name_on_bill: Optional[str] = None
-    extraction_warnings: List[str] = Field(default_factory=list)
-    summary_narrative: Optional[str] = None
+    total_billed_amount: float | None = None
+    itemised_charges: list[ItemisedCharge] = Field(default_factory=list)
+    primary_diagnosis_icd10: str | None = None
+    procedure_cpt_codes: list[str] = Field(default_factory=list)
+    symptom_onset_date: date | None = None
+    admission_date: date | None = None
+    discharge_date: date | None = None
+    attending_physician: str | None = None
+    physician_license_no: str | None = None
+    pre_authorisation_no: str | None = None
+    provider_name_on_bill: str | None = None
+    extraction_warnings: list[str] = Field(default_factory=list)
+    summary_narrative: str | None = None
 
 class ClaimIntakeOutput(BaseModel):
     """Schema B: Output"""
@@ -80,8 +81,8 @@ class ClaimIntakeOutput(BaseModel):
     provider_name: str
     provider_registration: str
     intake_accepted: bool
-    rejection_reason: Optional[str] = None
-    missing_documents: List[str] = Field(default_factory=list)
+    rejection_reason: str | None = None
+    missing_documents: list[str] = Field(default_factory=list)
     intake_timestamp: datetime
-    document_summary: Optional[DocumentSummary] = None
-    _debug_error: Optional[str] = None
+    document_summary: DocumentSummary | None = None
+    _debug_error: str | None = None

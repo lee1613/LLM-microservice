@@ -1,6 +1,5 @@
-import sqlite3
 import os
-from typing import Optional
+import sqlite3
 
 DB_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
 
@@ -9,7 +8,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def get_plan_document(policy_product_code: str, claim_type: str) -> Optional[str]:
+def get_plan_document(policy_product_code: str, claim_type: str) -> str | None:
     """Retrieve the natural-language plan coverage matrix for a given product code + claim type."""
     conn = get_db_connection()
     cursor = conn.cursor()

@@ -1,7 +1,7 @@
-import sqlite3
-import re
 import os
-from typing import Optional, Dict, Any
+import re
+import sqlite3
+from typing import Any
 
 DB_PATH       = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'database.db')
 REGISTRY_PATH = os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'health-insurance-claim', 'synthetic data', 'registry.db')
@@ -46,7 +46,7 @@ def validate_bank_account(bank_name: str, bank_account_no: str) -> bool:
     return bool(re.match(pattern, bank_account_no))
 
 
-def get_provider_bank_details(provider_registration: str) -> Optional[Dict[str, Any]]:
+def get_provider_bank_details(provider_registration: str) -> dict[str, Any] | None:
     """Look up provider bank details from accredited_providers (registry.db)."""
     conn = _reg()
     row = conn.execute(

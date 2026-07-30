@@ -1,6 +1,5 @@
-import sqlite3
 import os
-from typing import Optional
+import sqlite3
 
 DB_PATH = os.path.join(
     os.path.dirname(__file__), '..', '..',
@@ -14,7 +13,7 @@ def _conn():
     return c
 
 
-def get_plan_document(policy_product_code: str, claim_type: str) -> Optional[str]:
+def get_plan_document(policy_product_code: str, claim_type: str) -> str | None:
     """
     Retrieve the natural-language plan coverage document for a product+claim_type.
     This is the authoritative source for all cost-sharing parameters in Node 5.

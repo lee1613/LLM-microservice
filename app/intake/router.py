@@ -1,14 +1,13 @@
 import json
 import os
-import tempfile
 import shutil
-from typing import List, Optional
+import tempfile
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import ValidationError
 
-from app.intake.schemas import ClaimIntakeInput, ClaimIntakeOutput
 from app.intake.agent import process_claim_intake
+from app.intake.schemas import ClaimIntakeInput, ClaimIntakeOutput
 
 router = APIRouter(prefix="/intake", tags=["claim-intake"])
 
@@ -24,7 +23,7 @@ async def intake_claim(
             "and the uploaded files are used instead."
         ),
     ),
-    files: List[UploadFile] = File(
+    files: list[UploadFile] = File(
         default=[],
         description=(
             "The actual supporting PDF documents "
@@ -99,10 +98,10 @@ async def intake_claim(
         raise HTTPException(status_code=422, detail=f"claim_data is not valid JSON: {exc}")
 
     # ── 2. Handle uploaded PDFs ───────────────────────────────────────────────
-    tmp_dir: Optional[str] = None
+    tmp_dir: str | None = None
     if files:
         tmp_dir = tempfile.mkdtemp(prefix="intake_upload_")
-        scanned_paths: List[str] = []
+        scanned_paths: list[str] = []
         try:
             for upload in files:
                 safe_name = os.path.basename(upload.filename or "document.pdf")

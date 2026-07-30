@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
-from app.verification.schemas import PolicyVerificationInput, PolicyVerificationOutput
 from app.verification.agent import process_verification
+from app.verification.schemas import PolicyVerificationInput, PolicyVerificationOutput
 
 router = APIRouter(prefix="/verification", tags=["policy-verification"])
 

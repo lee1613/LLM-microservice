@@ -1,12 +1,14 @@
-from datetime import datetime, timezone, date
+from datetime import date, datetime, timezone
+
 from app.verification.schemas import PolicyVerificationInput, PolicyVerificationOutput
 from app.verification.tools import (
+    get_dependent_coverage_end_date,
+    get_duplicate_claims_count,
     get_policy,
     get_policy_member,
     get_premium_arrears_count,
-    get_dependent_coverage_end_date,
-    get_duplicate_claims_count
 )
+
 
 def process_verification(input_data: PolicyVerificationInput) -> PolicyVerificationOutput:
     # Default outputs

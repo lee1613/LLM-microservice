@@ -1,8 +1,10 @@
-from pydantic import BaseModel
-from typing import Optional, List
 from datetime import date, datetime
 from enum import Enum
-from app.intake.schemas import DocumentSummary, ClaimType
+
+from pydantic import BaseModel
+
+from app.intake.schemas import ClaimType, DocumentSummary
+
 
 class WaitingPeriodBasis(str, Enum):
     symptom_onset = "symptom_onset"
@@ -34,7 +36,7 @@ class EligibilityCheckOutput(BaseModel):
     provider_registration: str
     document_summary: DocumentSummary
     eligible: bool
-    eligibility_failure_reason: Optional[str] = None
+    eligibility_failure_reason: str | None = None
     waiting_period_satisfied: bool
     waiting_period_days: int
     waiting_period_basis: WaitingPeriodBasis
@@ -43,6 +45,6 @@ class EligibilityCheckOutput(BaseModel):
     annual_limit_remaining: float
     per_claim_limit: float
     claimable_ceiling: float
-    exclusions_triggered: List[str]
+    exclusions_triggered: list[str]
     eligibility_rationale: str
     eligibility_timestamp: datetime

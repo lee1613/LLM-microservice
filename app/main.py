@@ -1,15 +1,17 @@
 import json
 import time
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
-from app.intake import router as intake
-from app.verification import router as verification
-from app.eligibility import router as eligibility
-from app.medical import router as medical
+
 from app.adjudication import router as adjudication
-from app.disbursement import router as disbursement
 from app.dev import router as dev
+from app.disbursement import router as disbursement
+from app.eligibility import router as eligibility
+from app.intake import router as intake
+from app.medical import router as medical
+from app.verification import router as verification
 
 app = FastAPI(
     title="Health Insurance Claims Pipeline",

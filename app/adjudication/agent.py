@@ -6,14 +6,23 @@ Architecture per contract:
   Steps 2–5: fully deterministic arithmetic
   Step 5: LLM produces adjudication_notes (≤80 words)
 """
-import re
 import os
+import re
 from datetime import datetime, timezone
-from openai import OpenAI
-from dotenv import load_dotenv
 
-from app.adjudication.schemas import AdjudicationInput, AdjudicationOutput, AdjudicationStatus
-from app.adjudication.tools import get_plan_document, get_deductible_utilised, record_adjudicated_claim
+from dotenv import load_dotenv
+from openai import OpenAI
+
+from app.adjudication.schemas import (
+    AdjudicationInput,
+    AdjudicationOutput,
+    AdjudicationStatus,
+)
+from app.adjudication.tools import (
+    get_deductible_utilised,
+    get_plan_document,
+    record_adjudicated_claim,
+)
 from app.core.llm_utils import call_llm_raw_with_retry
 
 load_dotenv()
