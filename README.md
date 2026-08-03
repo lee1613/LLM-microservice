@@ -8,7 +8,7 @@ medical coding, adjudicates the cost-share maths, and disburses payment — each
 LLM agent or a deterministic guardrail, every decision traceable back to the source
 document.
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-2ea043)](https://lee1613.github.io/LLM-microservice/demo/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-2ea043)](https://lee1613.github.io/LLM-microservice/)
 · Built for the **AI Agent Olympics**
 · [![License: MIT](https://img.shields.io/badge/License-MIT-blue)](LICENSE)
 
